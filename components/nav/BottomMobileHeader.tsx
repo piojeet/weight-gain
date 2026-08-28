@@ -47,7 +47,11 @@ export default function BottomMobileHeader() {
       <ul className="flex items-center justify-between px-2">
         {NAV_ITEMS.map(
           ({ label, href, icon: Icon, activeIcon: ActiveIcon }) => {
-            const isActive = href === "/my-account" ? pathname.startsWith("/my-account") : pathname === href;
+            const isActive = href === "/my-account"
+              ? pathname.startsWith("/my-account")
+              : href === "/shop"
+                ? pathname === "/shop" || pathname.startsWith("/product")
+                : pathname === href || pathname.startsWith(`${href}/`);
             const IconToShow = isActive ? ActiveIcon : Icon;
             const count = href === "/wishlist" ? productIds.length : href === "/cart" ? cartCount : 0;
 
@@ -58,6 +62,7 @@ export default function BottomMobileHeader() {
                   className={`relative flex flex-col items-center gap-1 py-3 text-[11px] font-medium ${
                     isActive ? "text-[#1a9853]" : "text-navy"
                   }`}
+                  aria-current={isActive ? "page" : undefined}
                 >
                   <span className="relative text-xl">
                     <IconToShow />

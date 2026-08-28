@@ -10,6 +10,7 @@ import { useWishlist } from "@/app/hooks/useWishlist";
 import { useCart } from "@/app/hooks/useCart";
 import ProductSearch from "@/components/search/ProductSearch";
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 
 const NAV_LINKS = [
   { label: "Shop", href: "/shop" },
@@ -27,9 +28,12 @@ const ICON_LINKS = [
 
 export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const pathname = usePathname();
   const { productIds } = useWishlist();
   const { items } = useCart();
   const cartCount = items.reduce((total, item) => total + item.quantity, 0);
+  const isRouteActive = (href: string) =>
+    href === "/shop" ? pathname === "/shop" || pathname.startsWith("/product") : pathname === href || pathname.startsWith(`${href}/`);
 
   useEffect(() => {
     const previousOverflow = document.body.style.overflow;
@@ -60,7 +64,8 @@ export default function Header() {
             <li key={label}>
               <Link
                 href={href}
-                className="border-b-2 border-transparent pb-1 hover:border-[#1a9853] hover:text-[#1a9853]"
+                aria-current={isRouteActive(href) ? "page" : undefined}
+                className={`border-b-2 pb-1 transition-colors ${isRouteActive(href) ? "border-[#1a9853] font-bold text-[#1a9853]" : "border-transparent hover:border-[#1a9853] hover:text-[#1a9853]"}`}
               >
                 {label}
               </Link>
@@ -74,11 +79,14 @@ export default function Header() {
           <div className="flex items-center gap-1 sm:gap-2">
             {ICON_LINKS.map(({ href, icon: Icon }) => {
               const count = href === "/wishlist" ? productIds.length : href === "/cart" ? cartCount : 0;
+              const isActive = isRouteActive(href);
               return (
               <Link
                 key={href}
                 href={href}
-                className="relative flex size-9 shrink-0 items-center justify-center rounded-full text-lg hover:bg-blue-50"
+                aria-label={href === "/my-account" ? "My account" : href.slice(1)}
+                aria-current={isActive ? "page" : undefined}
+                className={`relative flex size-9 shrink-0 items-center justify-center rounded-full text-lg ${isActive ? "bg-green-soft text-green-600" : "hover:bg-blue-50"}`}
               >
                 <Icon />
                 {count > 0 && (
@@ -103,7 +111,8 @@ export default function Header() {
               <Link
                 href={href}
                 onClick={() => setMenuOpen(false)}
-                className="block rounded-md px-3 py-3 text-sm font-semibold text-navy hover:bg-green-soft hover:text-green-600"
+                aria-current={isRouteActive(href) ? "page" : undefined}
+                className={`block rounded-md border-l-2 px-3 py-3 text-sm font-semibold ${isRouteActive(href) ? "border-green-600 bg-green-soft text-green-600" : "border-transparent text-navy hover:bg-green-soft hover:text-green-600"}`}
               >
                 {label}
               </Link>
