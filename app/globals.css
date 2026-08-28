@@ -1,26 +1,160 @@
+@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap");
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-sans);
+
+  /* Primary */
+  --color-navy-900: var(--navy-900);
+  --color-navy-800: var(--navy-800);
+  --color-light-blue: var(--light-blue);
+
+  /* Accent */
+  --color-green-500: var(--green-500);
+  --color-green-600: var(--green-600);
+
+  /* Category accents */
+  --color-blue-400: var(--blue-400);
+  --color-orange-400: var(--orange-400);
+  --color-purple-400: var(--purple-400);
+
+  /* Ratings / highlights */
+  --color-gold-400: var(--gold-400);
+  --color-brown-600: var(--brown-600);
+
+  /* Neutrals */
+  --color-white: var(--white);
+  --color-gray-50: var(--gray-50);
+  --color-gray-100: var(--gray-100);
+  --color-gray-300: var(--gray-300);
+  --color-gray-500: var(--gray-500);
+  --color-gray-700: var(--gray-700);
+  --color-black: var(--black);
+
+  --color-green-soft: var(--green-soft);
+  --color-brand-green: var(--brand-green);
+  --color-brand-blue: var(--brand-blue);
+  --color-line: var(--line);
+  --color-card: var(--card);
+  --color-navy-deep: var(--navy-deep);
+  --color-navy: var(--navy);
+  --color-secondary: var(--secondary);
+  --color-star: var(--star);
+  --color-slate-soft: var(--slate-soft);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+:root {
+  --font-sans: "Plus Jakarta Sans", sans-serif;
+
+  /* shadcn/ui semantic tokens */
+  --background: #fbfcfe;
+  --foreground: #102a43;
+  --primary: #1e7a3b;
+  --primary-foreground: #ffffff;
+  --secondary: #eef6ff;
+  --secondary-foreground: #102a43;
+  --muted: #f7f8fa;
+  --muted-foreground: #64748b;
+  --accent: #eef8f2;
+  --accent-foreground: #1e7a3b;
+  --destructive: #dc2626;
+  --destructive-foreground: #ffffff;
+  --border: #e2e8f0;
+  --input: #e2e8f0;
+  --ring: #2fa84f;
+  --radius: 0.5rem;
+
+  /* Primary */
+  --navy-900: #000f30;
+  --navy-800: #12294f;
+  --light-blue: #f3f5fc;
+
+  /* Accent */
+  --green-500: #2fa84f;
+  --green-600: #1e7a3b;
+
+  /* Category accents */
+  --blue-400: #4a7fe0;
+  --orange-400: #f0894c;
+  --purple-400: #9b7fe8;
+
+  /* Ratings / highlights */
+  --gold-400: #f5b301;
+  --brown-600: #6b4a34;
+
+  /* Neutrals */
+  --white: #ffffff;
+  --gray-50: #f7f8fa;
+  --gray-100: #f0f1f4;
+  --gray-300: #d8dce3;
+  --gray-500: #6b7280;
+  --gray-700: #374151;
+  --black: #000000;
+
+  --green-soft: #eef8f2;
+  --brand-green: #2f7d5b;
+  --brand-blue: #245b8f;
+  --line: #e2e8f0;
+  --card: #ffffff;
+  --navy-deep: #0b1f33;
+  --navy: #102a43;
+  --secondary: #eef6ff;
+  --star: #f59e0b;
+  --slate-soft: #64748b;
+
+  --gradient-blue: linear-gradient(180deg, #ffffff 0%, #f2f8ff 100%);
+  --gradient-green: linear-gradient(180deg, #ffffff 0%, #eef8f2 100%);
+}
+
+@utility gradient-blue {
+  background-image: var(--gradient-blue);
+}
+
+@utility gradient-green {
+  background-image: var(--gradient-green);
+}
+
+html,
+body {
+  font-family: var(--font-sans);
+}
+
+.container-page {
+  padding-inline: 20px;
+  margin: auto;
+}
+
+@media (min-width: 1024px) {
+  .container-page {
+    padding-inline: 38px;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@media (min-width: 1280px) {
+  .container-page {
+    max-width: 1440px;
+    padding-inline: 60px;
+  }
+}
+
+/* Add to globals.css — makes only the slider thumbs (not the whole track) clickable */
+.range-thumb::-webkit-slider-thumb {
+  pointer-events: auto;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 9999px;
+  background: var(--white);
+  border: 3px solid var(--green-500);
+  cursor: pointer;
+}
+
+.range-thumb::-moz-range-thumb {
+  pointer-events: auto;
+  width: 16px;
+  height: 16px;
+  border-radius: 9999px;
+  background: var(--white);
+  border: 3px solid var(--green-500);
+  cursor: pointer;
 }

@@ -1,5 +1,17 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Algolia Search
+
+Copy `.env.example` to `.env.local` and set the Algolia search-only credentials:
+
+```bash
+NEXT_PUBLIC_ALGOLIA_APP_ID=your_app_id
+NEXT_PUBLIC_ALGOLIA_SEARCH_KEY=your_search_only_key
+NEXT_PUBLIC_ALGOLIA_INDEX_NAME=products
+```
+
+The header and mobile search use Algolia when these values are present. Without them, search falls back to the local product catalog. Never use an Algolia admin or write key in a `NEXT_PUBLIC_` variable.
+
 ## Getting Started
 
 First, run the development server:
