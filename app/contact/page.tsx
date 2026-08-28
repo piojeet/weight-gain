@@ -32,7 +32,7 @@ export default function ContactPage() {
   const { isWishlisted, toggleWishlist } = useWishlist();
   const submit = (event: FormEvent<HTMLFormElement>) => { event.preventDefault(); setSubmitted(true); event.currentTarget.reset(); };
 
-  return <section className="bg-[#fbfcfe] py-7 text-navy">
+  return <section className="container-page bg-[#fbfcfe] py-7 text-navy">
     <div className="text-[10px] text-slate-soft">Home <span className="mx-2">›</span> <span className="text-navy">Contact Us</span></div>
     <div className="relative mt-3 overflow-hidden rounded-lg"><div className="relative z-10 max-w-md py-2 sm:py-4"><h1 className="text-[30px] font-extrabold tracking-tight sm:text-[38px]">Contact Us</h1><p className="mt-2 text-xs leading-5 text-slate-soft">We&apos;re here to help! Reach out to us for any queries, support,<br className="hidden sm:block" /> or feedback. Our team will get back to you as soon as possible.</p><div className="mt-5 grid grid-cols-3 gap-2 sm:gap-4"><div className="flex items-center gap-2"><FiClock className="text-green-600" /><span className="text-[8px]"><b className="block text-[9px]">Quick Response</b>Within 24 hours</span></div><div className="flex items-center gap-2"><FiUser className="text-green-600" /><span className="text-[8px]"><b className="block text-[9px]">Expert Support</b>Trained Professionals</span></div><div className="flex items-center gap-2"><FiHeart className="text-green-600" /><span className="text-[8px]"><b className="block text-[9px]">Customer First</b>Your Satisfaction Matters</span></div></div></div><div className="absolute right-0 top-0 hidden h-full w-1/2 bg-[url('/hero.png')] bg-contain bg-right bg-no-repeat opacity-80 md:block" /></div>
 

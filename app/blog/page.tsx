@@ -67,7 +67,7 @@ export default function BlogPage() {
   const featured = articles[0];
   const sideArticles = articles.slice(1, 4);
 
-  return <section className="bg-[#fbfcfe] py-7 text-navy">
+  return <section className="container-page bg-[#fbfcfe] py-7 text-navy">
     <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_235px]">
       <main className="min-w-0">
         <div className="relative min-h-40 overflow-hidden rounded-lg border border-line bg-white px-5 py-7 shadow-sm sm:px-8"><div className="relative z-10 max-w-sm"><h1 className="text-[28px] font-extrabold tracking-tight sm:text-[32px]">NutriGain <span className="text-green-600">Blog</span></h1><p className="mt-2 text-xs leading-5 text-slate-soft">Stay informed with expert-backed articles on nutrition, fitness, wellness and healthy living.</p><button type="button" onClick={() => document.getElementById("articles")?.scrollIntoView({ behavior: "smooth" })} className="mt-4 rounded bg-green-600 px-4 py-2 text-[10px] font-bold text-white">Explore Articles</button></div><div className="absolute right-0 top-0 hidden h-full w-1/2 bg-[url('/hero-bg.png')] bg-cover bg-center opacity-70 sm:block" /></div>
