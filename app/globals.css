@@ -119,6 +119,24 @@ body {
   font-family: var(--font-sans);
 }
 
+[class*="text-[7px]"],
+[class*="text-[8px]"],
+[class*="text-[9px]"] {
+  font-size: 10px !important;
+}
+
+button,
+input,
+select,
+textarea {
+  transition: border-color 200ms ease-out, background-color 200ms ease-out,
+    color 200ms ease-out, box-shadow 200ms ease-out, transform 200ms ease-out;
+}
+
+button:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
 .container-page {
   padding-inline: 20px;
   margin: auto;

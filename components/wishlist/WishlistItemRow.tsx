@@ -5,6 +5,7 @@ import Link from "next/link";
 import { FaStar } from "react-icons/fa6";
 import { HiOutlineShoppingCart, HiOutlineTrash } from "react-icons/hi2";
 import type { Product } from "@/app/types/shop";
+import { Select } from "@/components/ui/select";
 
 export default function WishlistItemRow({
   product,
@@ -34,7 +35,7 @@ export default function WishlistItemRow({
         <div><strong className="text-base text-navy">₹{product.price.toLocaleString("en-IN")}</strong>{product.mrp && <><span className="ml-2 text-xs text-gray-400 line-through">₹{product.mrp.toLocaleString("en-IN")}</span><span className="ml-2 rounded bg-red-50 px-1.5 py-1 text-[10px] font-bold text-red-500">{Math.round((discount / product.mrp) * 100)}% OFF</span></>}</div>
       </div>
 
-      <div className="flex items-center justify-between sm:block"><span className="text-[10px] font-semibold uppercase text-slate-soft sm:hidden">Variant</span><select aria-label={`${product.name} variant`} defaultValue="default" className="rounded-md border border-line bg-white px-3 py-2 text-xs text-navy outline-none"><option value="default">Standard option</option><option>1 unit</option><option>3 kg</option></select></div>
+      <div className="flex items-center justify-between sm:block"><span className="text-[10px] font-semibold uppercase text-slate-soft sm:hidden">Variant</span><Select aria-label={`${product.name} variant`} defaultValue="default" className="text-xs"><option value="default">Standard option</option><option>1 unit</option><option>3 kg</option></Select></div>
 
       <div className="flex items-center justify-between sm:block"><span className="text-[10px] font-semibold uppercase text-slate-soft sm:hidden">Status</span><div><p className={`text-xs font-bold ${product.inStock ? "text-green-600" : "text-red-500"}`}>{product.inStock ? "In Stock" : "Out of Stock"}</p><p className="mt-1 text-[10px] text-slate-soft">{product.inStock ? "Ready to ship" : "Currently unavailable"}</p></div></div>
 

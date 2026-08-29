@@ -1,8 +1,6 @@
 "use client";
 
-import { useState } from "react";
 import { FaStar } from "react-icons/fa6";
-import { IoChevronDown } from "react-icons/io5";
 import {
   CATEGORIES,
   DIETARY_OPTIONS,
@@ -12,6 +10,7 @@ import {
 import { PRODUCTS } from "@/app/data/products";
 import { ShopFilters } from "@/app/types/shop";
 import PriceRangeSlider from "./PriceRangeSlider";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 function FilterGroup({
   title,
@@ -20,21 +19,13 @@ function FilterGroup({
   title: string;
   children: React.ReactNode;
 }) {
-  const [open, setOpen] = useState(true);
   return (
-    <div className="border-b border-line py-4 first:pt-0 last:border-0">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center justify-between text-sm font-semibold text-navy"
-      >
-        {title}
-        <IoChevronDown
-          className={`text-xs transition-transform ${open ? "rotate-180" : ""}`}
-        />
-      </button>
-      {open && <div className="mt-3 space-y-2">{children}</div>}
-    </div>
+    <Accordion defaultValue={[title]}>
+      <AccordionItem value={title} className="py-4 first:pt-0 last:border-0">
+        <AccordionTrigger className="text-sm font-semibold text-navy">{title}</AccordionTrigger>
+        <AccordionContent className="mt-3 space-y-2">{children}</AccordionContent>
+      </AccordionItem>
+    </Accordion>
   );
 }
 

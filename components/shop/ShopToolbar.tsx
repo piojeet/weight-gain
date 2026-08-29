@@ -1,6 +1,7 @@
 import { IoSearchOutline } from "react-icons/io5";
 import { SORT_LABELS } from "@/app/data/shop-filters";
 import { SortOption } from "@/app/types/shop";
+import { Select } from "@/components/ui/select";
 
 export default function ShopToolbar({
   total,
@@ -26,19 +27,19 @@ export default function ShopToolbar({
         </p>
       </div>
 
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+      <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center">
         <div className="relative">
           <input
             type="text"
             value={search}
             onChange={(e) => onSearch(e.target.value)}
             placeholder="Search products..."
-            className="hidden w-full rounded-lg border border-line py-2 pr-3 pl-9 text-xs outline-none focus:border-navy sm:block sm:w-56"
+            className="w-full rounded-lg border border-line py-2 pr-3 pl-9 text-xs outline-none focus:border-navy sm:block sm:w-56"
           />
           <IoSearchOutline className="absolute top-1/2 left-3 -translate-y-1/2 text-sm text-slate-soft" />
         </div>
 
-        <select
+        <Select
           value={sort}
           onChange={(e) => onSort(e.target.value as SortOption)}
           className="rounded-lg border border-line py-2 px-3 text-xs text-navy outline-none focus:border-navy"
@@ -48,7 +49,7 @@ export default function ShopToolbar({
               Sort by: {label}
             </option>
           ))}
-        </select>
+        </Select>
       </div>
     </div>
   );

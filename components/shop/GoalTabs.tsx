@@ -20,7 +20,7 @@ export default function GoalTabs({
               key={slug}
               type="button"
               onClick={() => onSelect(slug)}
-              className={`flex min-w-[76px] shrink-0 flex-col items-center gap-1 rounded-full border p-2 text-center transition-colors sm:min-w-[160px] sm:flex-row sm:gap-3 sm:rounded-xl sm:p-3.5 sm:text-left ${
+              className={`flex min-w-[76px] shrink-0 flex-col items-center gap-1 rounded-md border p-2 text-center transition-colors sm:min-w-[160px] sm:flex-row sm:gap-3 sm:rounded-xl sm:p-3.5 sm:text-left ${
                 isActive
                   ? "border-green-500 bg-green-soft"
                   : "border-line bg-white hover:border-navy/20"
