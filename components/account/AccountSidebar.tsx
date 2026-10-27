@@ -1,8 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
+import { authApi } from "@/lib/api/auth";
+import { setCsrfToken } from "@/lib/api/client";
 import {
     FiBell,
     FiBox,
@@ -10,6 +12,7 @@ import {
     FiCreditCard,
     FiHome,
     FiLogOut,
+    FiMessageCircle,
     FiMapPin,
     FiSettings,
     FiStar,
@@ -47,6 +50,9 @@ const links = [
         "Notification Settings", "/my-account/notifications", FiBell
     ],
     [
+        "Support", "/my-account/support", FiMessageCircle
+    ],
+    [
         "Account Settings", "/my-account", FiSettings
     ]
 ] as const;
@@ -57,7 +63,21 @@ export default function AccountSidebar({
     activeLabel? : string
 }) {
     const pathname = usePathname();
+    const router = useRouter();
     const [menuOpen, setMenuOpen] = useState(false);
+    const [loggingOut, setLoggingOut] = useState(false);
+
+    const handleLogout = async () => {
+        if (loggingOut) return;
+        setLoggingOut(true);
+        try {
+            await authApi.logout();
+            setCsrfToken(null);
+            router.replace("/login");
+        } finally {
+            setLoggingOut(false);
+        }
+    };
 
     return <aside className="rounded-xl border border-line bg-white p-4 shadow-soft lg:sticky lg:top-5 lg:h-fit">
         <div className="flex items-center gap-3 border-b border-line pb-5">
@@ -81,7 +101,7 @@ export default function AccountSidebar({
                     }`
             }><Icon/>{label}</Link>)
         }
-            <button type="button" className="mt-2 flex items-center gap-3 border-t border-line px-3 pt-4 text-xs text-navy"><FiLogOut/>Log Out</button>
+            <button type="button" onClick={() => void handleLogout()} disabled={loggingOut} className="mt-2 flex items-center gap-3 border-t border-line px-3 pt-4 text-xs text-navy disabled:cursor-not-allowed disabled:opacity-60"><FiLogOut/>{loggingOut ? "Logging Out..." : "Log Out"}</button>
         </nav>
         <div className="mt-5 rounded-lg bg-[#f3f8fc] p-4">
             <p className="text-xs font-bold text-navy">Need Help?</p>

@@ -12,6 +12,10 @@ NEXT_PUBLIC_ALGOLIA_INDEX_NAME=products
 
 The header and mobile search use Algolia when these values are present. Without them, search falls back to the local product catalog. Never use an Algolia admin or write key in a `NEXT_PUBLIC_` variable.
 
+## Auth API (local)
+
+The Next.js app proxies `/v1/*` to `http://localhost:3001/v1/*` (see `next.config.ts`) so HTTP-only auth cookies stay on `localhost:3000`. Run the API from `../api` first (`npm run dev` on port 3001).
+
 ## Getting Started
 
 First, run the development server:

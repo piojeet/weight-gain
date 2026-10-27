@@ -6,11 +6,13 @@ import HowItWorks from "@/components/home/HowItWorks";
 import ScienceSection from "@/components/home/ScienceSection";
 import TopCategories from "@/components/home/TopCategories";
 import TrustStrip from "@/components/home/TrustStrip";
+import LiveBanners from "@/components/home/LiveBanners";
 
 export default function Home() {
   return (
     <div>
       <Hero />
+      <LiveBanners />
       <TrustStrip />
       <TopCategories />
       <BestSellingProducts />

@@ -1,17 +1,17 @@
 "use client";
 
-import { PRICE_BOUNDS } from "@/app/data/shop-filters";
-
 export default function PriceRangeSlider({
   min,
   max,
+  bounds,
   onChange,
 }: {
   min: number;
   max: number;
+  bounds: { min: number; max: number };
   onChange: (min: number, max: number) => void;
 }) {
-  const { min: boundMin, max: boundMax } = PRICE_BOUNDS;
+  const { min: boundMin, max: boundMax } = bounds;
 
   const handleMin = (value: number) => onChange(Math.min(value, max - 1), max);
   const handleMax = (value: number) => onChange(min, Math.max(value, min + 1));
@@ -21,10 +21,10 @@ export default function PriceRangeSlider({
 
   return (
     <div>
-      <div className="relative h-1.5">
+      <div className="relative h-1">
         <div className="absolute inset-0 rounded-full bg-gray-100" />
         <div
-          className="absolute h-full rounded-full bg-green-500"
+          className="absolute h-full rounded-full bg-green-600"
           style={{ left: `${minPercent}%`, right: `${100 - maxPercent}%` }}
         />
         <input

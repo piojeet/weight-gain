@@ -8,7 +8,7 @@ import type { Product } from "@/app/types/shop";
 const FALLBACK_IMAGE = "/categories/mass-gainer.jpg";
 
 export default function ProductGallery({ product }: { product: Product }) {
-  const images = [product.image, FALLBACK_IMAGE, FALLBACK_IMAGE];
+  const images = product.images?.length ? product.images : [product.image || FALLBACK_IMAGE];
   const [activeIndex, setActiveIndex] = useState(0);
   const [zoomed, setZoomed] = useState(false);
   const [failedImages, setFailedImages] = useState<number[]>([]);

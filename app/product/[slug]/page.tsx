@@ -1,28 +1,24 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { PRODUCTS } from "@/app/data/products";
+import { commerceApi, normalizeCommerceProduct } from "@/lib/api/commerce";
 import ProductGallery from "@/components/product/ProductGallery";
 import ProductInformation from "@/components/product/ProductInformation";
 import ProductPurchasePanel from "@/components/product/ProductPurchasePanel";
 import RelatedProducts from "@/components/product/RelatedProducts";
 import CustomerReviews from "@/components/product/CustomerReviews";
 
-export function generateStaticParams() {
-  return PRODUCTS.map((product) => ({ slug: product.slug }));
-}
+export const dynamic = "force-dynamic";
 
 export default async function ProductPage({
   params,
 }: PageProps<"/product/[slug]">) {
   const { slug } = await params;
-  const product = PRODUCTS.find(
-    (item) => item.slug === slug || String(item.id) === slug,
-  );
-  if (!product) notFound();
+  let response;
+  try { response = await fetch(`${process.env.API_SERVER_URL ?? "http://localhost:3001/v1"}/api/products/${encodeURIComponent(slug)}`, { cache: "no-store" }).then((res) => res.ok ? res.json() : null); } catch { response = null; }
+  if (!response?.success || !response.data?.product) notFound();
+  const product = normalizeCommerceProduct(response.data.product);
 
-  const relatedProducts = PRODUCTS.filter(
-    (item) => item.categorySlug === product.categorySlug && item.id !== product.id,
-  ).slice(0, 4);
+  const relatedProducts = (response.data.related ?? []).map(normalizeCommerceProduct).slice(0, 4);
 
   return (
     <main className="container-page py-6 sm:py-10">

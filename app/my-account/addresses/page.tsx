@@ -1,53 +1,246 @@
-﻿"use client";
+"use client";
 
-import { useState } from "react";
-import { FiCheck, FiEdit2, FiMapPin, FiPlus, FiTrash2 } from "react-icons/fi";
+import { useEffect, useMemo, useState } from "react";
+import { commerceApi } from "@/lib/api/commerce";
+import { HoldToConfirm } from "@/components/ui/hold-to-confirm";
+import { ApiError } from "@/lib/api/client";
 
-type Address = { id: number; title: string; lines: string[] };
-type FormState = { fullName: string; phone: string; title: string; building: string; street: string; landmark: string; city: string; state: string; pincode: string; country: string; isDefault: boolean };
+type Address = Record<string, any>;
 
-const initial: Address[] = [
-  { id: 1, title: "Home", lines: ["Rahul Sharma", "Flat 101, Green Valley Apartments", "MG Road, Sector 15", "Gurugram, Haryana - 122001", "India", "Phone: +91 98765 43210"] },
-  { id: 2, title: "Work", lines: ["Rahul Sharma", "NutriGain Wellness Pvt. Ltd.", "3rd Floor, Tower B, DLF Cyber City", "Gurugram, Haryana - 122002", "India", "Phone: +91 98765 43210"] },
-];
-const blank: FormState = { fullName: "Rahul Sharma", phone: "+91 98765 43210", title: "Home", building: "", street: "", landmark: "", city: "", state: "", pincode: "", country: "India", isDefault: true };
+type AddressForm = {
+  id?: string;
+  title: string;
+  fullName: string;
+  phone: string;
+  addressLine1: string;
+  addressLine2: string;
+  landmark: string;
+  city: string;
+  state: string;
+  pincode: string;
+  country: string;
+  isDefault: boolean;
+};
 
-function AddressForm({ value, setValue, editing, close, save }: { value: FormState; setValue: (value: FormState) => void; editing: boolean; close: () => void; save: () => void }) {
-  const [coords, setCoords] = useState<{ lat: number; lon: number } | null>(null);
-  const [message, setMessage] = useState("");
-  const locate = () => {
-    if (!navigator.geolocation) { setMessage("Location is not supported by this browser."); return; }
-    setMessage("Finding current location...");
-    navigator.geolocation.getCurrentPosition(async ({ coords: position }) => {
-      setCoords({ lat: position.latitude, lon: position.longitude });
-      try {
-        const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${position.latitude}&lon=${position.longitude}`);
-        let result = await response.json();
-        let a = result.address || {};
-        if (!a.postcode && !a.postal_code) {
-          const fallbackResponse = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${position.latitude}&longitude=${position.longitude}&localityLanguage=en`);
-          if (fallbackResponse.ok) {
-            const fallback = await fallbackResponse.json();
-            result = { ...result, ...fallback };
-            a = { ...a, ...fallback.localityInfo?.administrative?.[fallback.localityInfo.administrative.length - 1], postcode: fallback.postcode };
-          }
-        }
-        const pincodeCandidates = [a.postcode, a.postal_code, result.extratags?.postcode, result.postcode, result.display_name?.match(/\b\d{6}\b/)?.[0], value.pincode];
-        const detectedPincode = pincodeCandidates.map((candidate) => String(candidate || "").replace(/\D/g, "")).find((candidate) => /^\d{6}$/.test(candidate)) || "";
-        setValue({ ...value, building: [a.house_number, a.road].filter(Boolean).join(", ") || a.building || value.building, street: [a.neighbourhood, a.suburb, a.residential, a.city_district].filter(Boolean).join(", ") || a.road || value.street, landmark: a.amenity || a.tourism || a.shop || a.county || value.landmark, city: a.city || a.town || a.village || a.municipality || a.county || value.city, state: a.state || a.state_district || value.state, pincode: detectedPincode, country: a.country || value.country });
-        setMessage(detectedPincode ? "Current location applied to all address fields." : "Location applied, but this area has no pincode data. Please enter and verify the pincode.");
-      } catch { setMessage("Location found, but address details could not be loaded."); }
-    }, (error) => setMessage(error.code === 1 ? "Location permission denied. Please allow it and try again." : "Could not find your location."));
-  };
-  const field = (key: keyof FormState, label: string) => <label className="grid gap-1 text-[11px] font-semibold text-navy">{label}<input value={String(value[key])} required={label.endsWith("*")} onChange={(event) => setValue({ ...value, [key]: event.target.value })} className="h-10 rounded border border-line px-3 font-normal outline-none focus:border-green-500" /></label>;
-  return <div className="fixed inset-0 z-50 overflow-y-auto bg-navy-900/30 p-3 sm:p-8"><form onSubmit={(event) => { event.preventDefault(); save(); }} className="mx-auto grid max-w-5xl gap-5 rounded-lg bg-white p-5 shadow-xl lg:grid-cols-[1fr_280px]"><section><header className="flex items-center justify-between border-b border-line pb-4"><div><h2 className="text-lg font-extrabold text-navy">{editing ? "Edit Address" : "Add New Address"}</h2><p className="mt-1 text-[10px] text-slate-soft">Use your current location to auto-fill the address.</p></div><button type="button" onClick={close} className="text-2xl text-slate-soft">Ã—</button></header><button type="button" onClick={locate} className="mt-4 flex items-center gap-2 rounded border border-green-500 px-3 py-2 text-[11px] font-bold text-green-600"><FiMapPin /> Use Current Location</button>{message && <p className="mt-2 text-[10px] text-slate-soft">{message}</p>}<h3 className="mt-5 text-sm font-bold text-navy">Contact Details</h3><div className="mt-3 grid gap-4 sm:grid-cols-2">{field("fullName", "Full Name*")}{field("phone", "Phone Number*")}</div><h3 className="mt-6 text-sm font-bold text-navy">Address Details</h3><div className="mt-3 grid gap-4 sm:grid-cols-2">{field("title", "Address Type*")}{field("building", "Flat, House No., Building Name*")}{field("street", "Area, Street, Sector, Village*")}{field("landmark", "Landmark (Optional)")}{field("city", "City / Town*")}{field("state", "State*")}{field("pincode", "Pincode*")}{field("country", "Country*")}</div><div className="mt-5 flex items-center gap-2 text-[11px] font-bold text-navy"><input type="checkbox" checked={value.isDefault} onChange={(event) => setValue({ ...value, isDefault: event.target.checked })} className="size-4 accent-green-600" /> Set as Default Address</div><div className="mt-5 flex justify-end gap-3"><button type="button" onClick={close} className="rounded border border-navy-800 px-8 py-2.5 text-xs font-bold text-navy">Cancel</button><button type="submit" className="rounded bg-navy-900 px-10 py-2.5 text-xs font-bold text-white">Save Address</button></div></section><aside className="rounded-lg border border-line bg-[#fbfcfd] p-4"><h3 className="text-sm font-bold text-navy">Address Preview</h3><div className="mt-5 flex items-center gap-2 text-sm font-bold text-navy"><FiMapPin className="text-green-600" />{value.title || "Address"}</div><div className="mt-4 space-y-1 text-[11px] leading-4 text-navy"><p className="font-bold">{value.fullName}</p><p>{value.building}</p><p>{value.street}</p><p>{value.city}, {value.state} - {value.pincode}</p><p>{value.country}</p><p>Phone: {value.phone}</p></div><p className="mt-7 border-t border-dashed border-slate-300 pt-5 text-xs font-bold text-green-600">Delivering to this location</p>{coords ? <iframe title="Current location map" src={`https://www.openstreetmap.org/export/embed.html?bbox=${coords.lon - .01}%2C${coords.lat - .01}%2C${coords.lon + .01}%2C${coords.lat + .01}&layer=mapnik&marker=${coords.lat}%2C${coords.lon}`} className="mt-3 h-36 w-full rounded border-0" /> : <div className="mt-3 flex h-36 items-center justify-center rounded bg-[#e9f3ec] text-4xl">âŒ–</div>}<button type="button" onClick={locate} className="mt-2 flex w-full items-center justify-center gap-2 rounded border border-line bg-white py-2 text-[10px] font-bold text-navy"><FiMapPin /> Update Location on Map</button></aside></form></div>;
-}
-
-function Card({ address, isDefault, edit, remove, makeDefault }: { address: Address; isDefault: boolean; edit: () => void; remove: () => void; makeDefault: () => void }) { return <article className="rounded-lg border border-line bg-white p-4"><div className="flex justify-between gap-3"><div className="flex gap-3"><FiMapPin className="mt-1 text-green-600" /><div><div className="flex items-center gap-2"><h3 className="font-bold text-navy">{address.title}</h3>{isDefault && <span className="rounded bg-green-soft px-2 py-1 text-[10px] font-bold text-green-600">Default</span>}</div><div className="mt-2 space-y-0.5 text-[11px] leading-4 text-slate-soft">{address.lines.map((line, index) => <p key={line} className={index === 0 ? "font-bold text-navy" : ""}>{line}</p>)}</div></div></div><div className="flex gap-2"><button type="button" onClick={edit} className="flex items-center gap-1 text-[11px]"><FiEdit2 /> Edit</button><button type="button" onClick={remove} className="flex items-center gap-1 text-[11px] text-red-500"><FiTrash2 /> Delete</button></div></div><button type="button" onClick={makeDefault} className="mt-3 flex items-center gap-2 text-[11px] font-bold text-navy"><span className={`flex size-5 items-center justify-center rounded-full border ${isDefault ? "border-green-600 bg-green-soft text-green-600" : "border-slate-400 text-transparent"}`}>{isDefault && <FiCheck />}</span>{isDefault ? "Default Address" : "Set as Default"}</button></article>; }
+const blankAddress: AddressForm = {
+  title: "Home",
+  fullName: "",
+  phone: "",
+  addressLine1: "",
+  addressLine2: "",
+  landmark: "",
+  city: "",
+  state: "",
+  pincode: "",
+  country: "India",
+  isDefault: false,
+};
 
 export default function AddressesPage() {
-  const [addresses, setAddresses] = useState(initial); const [defaultId, setDefaultId] = useState(1); const [form, setForm] = useState<FormState | null>(null); const [editingId, setEditingId] = useState<number | null>(null);
-  const openEdit = (address: Address) => { const [city, rest] = address.lines[3].split(","); const [state, pincode] = (rest || "").split("-"); setEditingId(address.id); setForm({ ...blank, title: address.title, fullName: address.lines[0], building: address.lines[1], street: address.lines[2], city, state: state?.trim() || "", pincode: pincode?.trim() || "", country: address.lines[4], phone: address.lines[5].replace("Phone: ", "") }); };
-  const save = () => { if (!form) return; const id = editingId || Math.max(...addresses.map((item) => item.id)) + 1; const lines = [form.fullName, form.building, form.street, `${form.city}, ${form.state} - ${form.pincode}`, form.country, `Phone: ${form.phone}`]; setAddresses(editingId ? addresses.map((item) => item.id === id ? { ...item, title: form.title, lines } : item) : [...addresses, { id, title: form.title, lines }]); if (form.isDefault) setDefaultId(id); setForm(null); };
-  return <div className="bg-[#fbfcfd] pb-12"><div className="pt-5"><p className="text-[10px] text-slate-soft">Home <span className="mx-2">â€º</span> My Account <span className="mx-2">â€º</span> Addresses</p><div className="mt-5 flex items-start justify-between"><div><h1 className="text-2xl font-extrabold text-navy">My Addresses</h1><p className="mt-1 text-xs text-slate-soft">Manage your saved addresses for a faster checkout experience.</p></div><button type="button" onClick={() => { setEditingId(null); setForm(blank); }} className="flex items-center gap-2 rounded bg-navy-900 px-4 py-2.5 text-xs font-bold text-white"><FiPlus /> Add New Address</button></div><div className="mt-6"><main><div className="rounded-lg border border-line bg-white p-4"><h2 className="text-sm font-bold text-navy">Saved Addresses ({addresses.length})</h2><p className="mt-1 text-[10px] text-slate-soft">Select an address during checkout</p><div className="mt-4 grid gap-3">{addresses.map((address) => <Card key={address.id} address={address} isDefault={address.id === defaultId} edit={() => openEdit(address)} remove={() => addresses.length > 1 && setAddresses(addresses.filter((item) => item.id !== address.id))} makeDefault={() => setDefaultId(address.id)} />)}</div></div><button type="button" onClick={() => { setEditingId(null); setForm(blank); }} className="mt-4 flex w-full items-center gap-3 rounded-lg border border-green-100 bg-green-soft p-4 text-left"><FiPlus className="text-green-600" /><span><b className="block text-xs text-navy">Add a new delivery address</b><small className="text-[10px] text-slate-soft">Save a new address for faster checkout.</small></span></button></main></div></div>{form && <AddressForm value={form} setValue={setForm} editing={editingId !== null} close={() => setForm(null)} save={save} />}</div>;
+  const [addresses, setAddresses] = useState<Address[]>([]);
+  const [error, setError] = useState("");
+  const [form, setForm] = useState<AddressForm>(blankAddress);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  const loadAddresses = async () => {
+    try {
+      const data = await commerceApi.addresses();
+      setAddresses(data.addresses as Address[]);
+      setError("");
+    } catch (caught) {
+      setError(caught instanceof ApiError ? caught.message : "Unable to load addresses");
+    }
+  };
+
+  useEffect(() => {
+    void loadAddresses();
+  }, []);
+
+  const defaultAddress = useMemo(() => addresses.find((address) => address.isDefault) ?? addresses[0] ?? null, [addresses]);
+
+  const onFieldChange = (field: keyof AddressForm, value: string | boolean) => {
+    setForm((current) => ({ ...current, [field]: value }));
+  };
+
+  const resetForm = () => {
+    setForm(blankAddress);
+    setEditingId(null);
+  };
+
+  const onSubmit = async () => {
+    const payload = {
+      title: form.title || "Home",
+      fullName: form.fullName,
+      phone: form.phone,
+      addressLine1: form.addressLine1,
+      addressLine2: form.addressLine2,
+      landmark: form.landmark,
+      city: form.city,
+      state: form.state,
+      pincode: form.pincode,
+      country: form.country || "India",
+      isDefault: form.isDefault,
+    };
+
+    if (!payload.fullName || !payload.phone || !payload.addressLine1 || !payload.city || !payload.state || !payload.pincode) {
+      setError("Please complete all required address fields.");
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      setError("");
+      if (editingId) {
+        await commerceApi.updateAddress(editingId, payload);
+      } else {
+        await commerceApi.createAddress(payload);
+      }
+      resetForm();
+      await loadAddresses();
+    } catch (caught) {
+      setError(caught instanceof ApiError ? caught.message : "Unable to save address.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const onEdit = (address: Address) => {
+    setEditingId(String(address.id));
+    setForm({
+      id: String(address.id),
+      title: String(address.title ?? "Home"),
+      fullName: String(address.fullName ?? ""),
+      phone: String(address.phone ?? ""),
+      addressLine1: String(address.addressLine1 ?? ""),
+      addressLine2: String(address.addressLine2 ?? ""),
+      landmark: String(address.landmark ?? ""),
+      city: String(address.city ?? ""),
+      state: String(address.state ?? ""),
+      pincode: String(address.pincode ?? ""),
+      country: String(address.country ?? "India"),
+      isDefault: Boolean(address.isDefault),
+    });
+  };
+
+  const onDelete = async (id: string) => {
+    try {
+      await commerceApi.deleteAddress(id);
+      await loadAddresses();
+      if (editingId === id) resetForm();
+    } catch (caught) {
+      setError(caught instanceof ApiError ? caught.message : "Unable to delete address.");
+    }
+  };
+
+  const onSetDefault = async (id: string) => {
+    try {
+      await commerceApi.updateAddress(id, { isDefault: true });
+      await loadAddresses();
+    } catch (caught) {
+      setError(caught instanceof ApiError ? caught.message : "Unable to set default address.");
+    }
+  };
+
+  return (
+    <main className="container-page py-8">
+      <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+        <div>
+          <h1 className="text-3xl font-extrabold text-navy">My Addresses</h1>
+          <p className="mt-2 text-sm text-slate-soft">{defaultAddress ? `Default address: ${String(defaultAddress.title ?? "Home")}` : "No default address yet."}</p>
+        </div>
+        <button
+          type="button"
+          onClick={resetForm}
+          className="rounded-full bg-navy px-4 py-2 text-sm font-semibold text-white"
+        >
+          {editingId ? "Cancel edit" : "Add new address"}
+        </button>
+      </div>
+
+      {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
+
+      <div className="mt-6 grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+        <section className="rounded-2xl border border-line bg-white p-5 shadow-sm">
+          <h2 className="text-lg font-bold text-navy">{editingId ? "Edit address" : "Add a new address"}</h2>
+          <div className="mt-4 grid gap-3 md:grid-cols-2">
+            <label className="text-sm text-slate-soft">
+              Label
+              <input value={form.title} onChange={(event) => onFieldChange("title", event.target.value)} className="mt-1 h-11 w-full rounded border border-line bg-slate-50 px-3 text-sm text-navy" />
+            </label>
+            <label className="text-sm text-slate-soft">
+              Full name
+              <input value={form.fullName} onChange={(event) => onFieldChange("fullName", event.target.value)} className="mt-1 h-11 w-full rounded border border-line bg-slate-50 px-3 text-sm text-navy" />
+            </label>
+            <label className="text-sm text-slate-soft md:col-span-2">
+              Phone number
+              <input value={form.phone} onChange={(event) => onFieldChange("phone", event.target.value)} className="mt-1 h-11 w-full rounded border border-line bg-slate-50 px-3 text-sm text-navy" />
+            </label>
+            <label className="text-sm text-slate-soft md:col-span-2">
+              Street address
+              <input value={form.addressLine1} onChange={(event) => onFieldChange("addressLine1", event.target.value)} className="mt-1 h-11 w-full rounded border border-line bg-slate-50 px-3 text-sm text-navy" />
+            </label>
+            <label className="text-sm text-slate-soft md:col-span-2">
+              Apartment / local area
+              <input value={form.addressLine2} onChange={(event) => onFieldChange("addressLine2", event.target.value)} className="mt-1 h-11 w-full rounded border border-line bg-slate-50 px-3 text-sm text-navy" />
+            </label>
+            <label className="text-sm text-slate-soft">
+              Landmark
+              <input value={form.landmark} onChange={(event) => onFieldChange("landmark", event.target.value)} className="mt-1 h-11 w-full rounded border border-line bg-slate-50 px-3 text-sm text-navy" />
+            </label>
+            <label className="text-sm text-slate-soft">
+              City
+              <input value={form.city} onChange={(event) => onFieldChange("city", event.target.value)} className="mt-1 h-11 w-full rounded border border-line bg-slate-50 px-3 text-sm text-navy" />
+            </label>
+            <label className="text-sm text-slate-soft">
+              State
+              <input value={form.state} onChange={(event) => onFieldChange("state", event.target.value)} className="mt-1 h-11 w-full rounded border border-line bg-slate-50 px-3 text-sm text-navy" />
+            </label>
+            <label className="text-sm text-slate-soft">
+              Pincode
+              <input value={form.pincode} onChange={(event) => onFieldChange("pincode", event.target.value)} className="mt-1 h-11 w-full rounded border border-line bg-slate-50 px-3 text-sm text-navy" />
+            </label>
+            <label className="text-sm text-slate-soft">
+              Country
+              <input value={form.country} onChange={(event) => onFieldChange("country", event.target.value)} className="mt-1 h-11 w-full rounded border border-line bg-slate-50 px-3 text-sm text-navy" />
+            </label>
+            <label className="flex items-center gap-2 text-sm text-slate-soft md:col-span-2">
+              <input type="checkbox" checked={form.isDefault} onChange={(event) => onFieldChange("isDefault", event.target.checked)} className="h-4 w-4" />
+              Set as default address
+            </label>
+          </div>
+          <button type="button" onClick={() => void onSubmit()} disabled={submitting} className="mt-5 rounded-full bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-60">
+            {submitting ? "Saving..." : editingId ? "Update address" : "Save address"}
+          </button>
+        </section>
+
+        <section className="rounded-2xl border border-line bg-white p-5 shadow-sm">
+          <h2 className="text-lg font-bold text-navy">Saved addresses</h2>
+          <div className="mt-4 space-y-3">
+            {addresses.length ? addresses.map((address) => (
+              <article key={String(address.id)} className="rounded-xl border border-line p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <strong className="text-sm font-bold text-navy">{String(address.title ?? "Home")}</strong>
+                      {Boolean(address.isDefault) && <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-700">Default</span>}
+                    </div>
+                    <p className="mt-2 text-sm text-slate-soft">{String(address.fullName)} • {String(address.phone)}</p>
+                    <p className="mt-1 text-sm text-slate-soft">
+                      {String(address.addressLine1)}{address.addressLine2 ? `, ${String(address.addressLine2)}` : ""}, {String(address.city)}, {String(address.state)} {String(address.pincode)}
+                    </p>
+                  </div>
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2 text-xs">
+                  <button type="button" onClick={() => onEdit(address)} className="rounded-full border border-line px-3 py-1.5 font-semibold text-navy">Edit</button>
+                  {!address.isDefault && <button type="button" onClick={() => void onSetDefault(String(address.id))} className="rounded-full border border-line px-3 py-1.5 font-semibold text-navy">Set default</button>}
+                  <HoldToConfirm onConfirm={() => void onDelete(String(address.id))} className="rounded-full border border-red-200 px-3 py-1.5 font-semibold text-red-600">Hold to Delete</HoldToConfirm>
+                </div>
+              </article>
+            )) : <p className="text-sm text-slate-soft">No saved addresses.</p>}
+          </div>
+        </section>
+      </div>
+    </main>
+  );
 }

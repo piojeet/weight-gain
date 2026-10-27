@@ -44,7 +44,7 @@ export default function ScienceSection() {
 
       <div>
         <p className="text-xs font-bold tracking-wide text-green-600">
-          SCIENCE BACKED. RESULTS DRIVEN.
+          Science-backed. Results driven.
         </p>
         <h2 className="font-display mt-2 text-2xl md:text-3xl font-extrabold text-navy sm:text-4xl">
           Nutrition That Works

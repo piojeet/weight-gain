@@ -1,15 +1,33 @@
 "use client";
 
-import { PRODUCTS } from "@/app/data/products";
 import { useWishlist } from "@/app/hooks/useWishlist";
+import { commerceApi, normalizeCommerceProduct } from "@/lib/api/commerce";
+import type { Product } from "@/app/types/shop";
 import WishlistItemRow from "@/components/wishlist/WishlistItemRow";
 import WishlistSummary from "@/components/wishlist/WishlistSummary";
 import { FiArrowRight, FiShare2, FiTrash2 } from "react-icons/fi";
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import { HoldToConfirm } from "@/components/ui/hold-to-confirm";
 
 export default function WishlistPage() {
   const { productIds, loading, clearWishlist, toggleWishlist } = useWishlist();
-  const products = PRODUCTS.filter((product) => productIds.includes(product.id));
+  const [products, setProducts] = useState<Product[]>([]);
+  const [productsLoading, setProductsLoading] = useState(false);
+  const [productsError, setProductsError] = useState("");
+  useEffect(() => {
+    if (!productIds.length) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setProducts([]);
+      return;
+    }
+    setProductsLoading(true);
+    setProductsError("");
+    commerceApi.products("?pageSize=100")
+      .then(({ products: rows }) => setProducts(rows.filter((product) => productIds.includes(product.id)).map(normalizeCommerceProduct)))
+      .catch((cause) => setProductsError(cause instanceof Error ? cause.message : "Unable to load wishlist products"))
+      .finally(() => setProductsLoading(false));
+  }, [productIds]);
   const savings = products.reduce((total, product) => total + (product.mrp ? product.mrp - product.price : 0), 0);
   const total = products.reduce((sum, product) => sum + product.price, 0);
 
@@ -21,10 +39,14 @@ export default function WishlistPage() {
     <section className="container-page py-8 sm:py-12">
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div><nav className="mb-3 flex items-center gap-2 text-xs text-slate-soft"><Link href="/">Home</Link><span>/</span><span className="text-navy">Wishlist</span></nav><h1 className="text-2xl font-extrabold text-navy sm:text-3xl">My Wishlist ({products.length})</h1><p className="mt-1 text-xs text-slate-soft">Products you&apos;ve saved for later</p></div>
-        <div className="flex gap-3"><button type="button" onClick={shareWishlist} className="flex items-center gap-2 rounded-md border border-line px-4 py-2 text-xs font-semibold text-navy hover:border-navy"><FiShare2 /> Share Wishlist</button><button type="button" onClick={() => void clearWishlist()} disabled={!products.length} className="flex items-center gap-2 rounded-md border border-red-200 px-4 py-2 text-xs font-semibold text-red-500 disabled:opacity-50"><FiTrash2 /> Clear All</button></div>
+        <div className="flex gap-3"><button type="button" onClick={shareWishlist} className="flex items-center gap-2 rounded-md border border-line px-4 py-2 text-xs font-semibold text-navy hover:border-navy"><FiShare2 /> Share Wishlist</button><HoldToConfirm onConfirm={() => void clearWishlist()} disabled={!products.length} className="flex items-center gap-2 rounded-md border border-red-200 px-4 py-2 text-xs font-semibold text-red-500 disabled:opacity-50">
+          <span className="flex items-center gap-2"><FiTrash2 /> Hold to Clear</span>
+          </HoldToConfirm></div>
       </div>
-      {loading ? (
+      {loading || productsLoading ? (
         <p className="mt-6 text-sm text-slate-soft">Loading wishlist...</p>
+      ) : productsError ? (
+        <p role="alert" className="mt-6 text-sm text-red-600">{productsError}</p>
       ) : products.length === 0 ? (
         <p className="mt-6 text-sm text-slate-soft">Your wishlist is empty.</p>
       ) : (

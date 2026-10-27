@@ -10,93 +10,117 @@ import {
   useState,
 } from "react";
 import type { ReactNode } from "react";
+import { commerceApi } from "@/lib/api/commerce";
 
+type ProductId = string | number;
 type WishlistContextValue = {
-  productIds: number[];
+  productIds: string[];
   loading: boolean;
   error: string | null;
-  isWishlisted: (productId: number) => boolean;
-  toggleWishlist: (productId: number) => Promise<void>;
+  isWishlisted: (productId: ProductId) => boolean;
+  toggleWishlist: (productId: ProductId) => Promise<void>;
   clearWishlist: () => Promise<void>;
 };
 
 const WishlistContext = createContext<WishlistContextValue | null>(null);
 
 export function WishlistProvider({ children }: { children: ReactNode }) {
-  const [productIds, setProductIds] = useState<number[]>([]);
+  const [productIds, setProductIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const productIdsRef = useRef<number[]>([]);
+  const productIdsRef = useRef<string[]>([]);
   const requestQueue = useRef(Promise.resolve());
   const hasPendingMutation = useRef(false);
+
+  const mergeProductIds = useCallback((...lists: Array<Array<string | undefined> | undefined>) => {
+    const next = new Set<string>();
+    for (const list of lists) {
+      for (const id of list ?? []) {
+        if (id) next.add(String(id));
+      }
+    }
+    return Array.from(next);
+  }, []);
 
   useEffect(() => {
     productIdsRef.current = productIds;
   }, [productIds]);
 
   useEffect(() => {
-    fetch("/api/wishlist")
-      .then(async (response) => {
-        if (!response.ok) throw new Error("Unable to load wishlist");
-        return response.json() as Promise<{ productIds: number[] }>;
-      })
+    let active = true;
+
+    commerceApi
+      .wishlist()
       .then((data) => {
-        if (!hasPendingMutation.current) {
-          productIdsRef.current = data.productIds;
-          setProductIds(data.productIds);
-        }
-      })
-      .catch(() => setError("Unable to load wishlist"))
-      .finally(() => setLoading(false));
-  }, []);
-
-  const toggleWishlist = useCallback(
-    (productId: number) => {
-      hasPendingMutation.current = true;
-      const request = requestQueue.current.then(async () => {
-        const currentIds = productIdsRef.current;
-        const isSaved = currentIds.includes(productId);
-        const nextIds = isSaved
-          ? currentIds.filter((id) => id !== productId)
-          : [...currentIds, productId];
-
+        if (!active || hasPendingMutation.current) return;
+        const nextIds = mergeProductIds(data.productIds ?? []);
         productIdsRef.current = nextIds;
         setProductIds(nextIds);
+      })
+      .catch(() => {
+        if (active) setError("Unable to load wishlist");
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [mergeProductIds]);
+
+  const toggleWishlist = useCallback(
+    (rawProductId: ProductId) => {
+      const productId = String(rawProductId);
+      hasPendingMutation.current = true;
+      const request = requestQueue.current.then(async () => {
+        const currentIds = [...productIdsRef.current];
+        const isSaved = currentIds.includes(productId);
+        const optimisticIds = isSaved
+          ? currentIds.filter((id) => id !== productId)
+          : mergeProductIds(currentIds, [productId]);
+
+        productIdsRef.current = optimisticIds;
+        setProductIds(optimisticIds);
         setError(null);
 
         try {
-          const response = await fetch("/api/wishlist", {
-            method: isSaved ? "DELETE" : "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ productId, productIds: nextIds }),
-          });
-          if (!response.ok) throw new Error("Unable to update wishlist");
-          const data = (await response.json()) as { productIds: number[] };
-          productIdsRef.current = data.productIds;
-          setProductIds(data.productIds);
+          const data = isSaved
+            ? await commerceApi.removeWishlist(productId)
+            : await commerceApi.addWishlist(productId);
+
+          const nextIds = mergeProductIds(optimisticIds, data.productIds ?? []);
+          productIdsRef.current = nextIds;
+          setProductIds(nextIds);
         } catch {
           productIdsRef.current = currentIds;
           setProductIds(currentIds);
           setError("Unable to update wishlist");
+        } finally {
+          hasPendingMutation.current = false;
         }
       });
 
       requestQueue.current = request.catch(() => undefined);
       return request;
     },
-    [],
+    [mergeProductIds],
   );
 
   const clearWishlist = useCallback(async () => {
     hasPendingMutation.current = true;
-    const previousIds = productIds;
+    const previousIds = [...productIds];
     setProductIds([]);
+
     try {
-      const response = await fetch("/api/wishlist", { method: "DELETE" });
-      if (!response.ok) throw new Error("Unable to clear wishlist");
+      await commerceApi.removeWishlist();
+      productIdsRef.current = [];
     } catch {
       setProductIds(previousIds);
+      productIdsRef.current = previousIds;
       setError("Unable to clear wishlist");
+    } finally {
+      hasPendingMutation.current = false;
     }
   }, [productIds]);
 
@@ -105,18 +129,14 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
       productIds,
       loading,
       error,
-      isWishlisted: (productId: number) => productIds.includes(productId),
+      isWishlisted: (productId: ProductId) => productIds.includes(String(productId)),
       toggleWishlist,
       clearWishlist,
     }),
     [clearWishlist, error, loading, productIds, toggleWishlist],
   );
 
-  return (
-    <WishlistContext.Provider value={value}>
-      {children}
-    </WishlistContext.Provider>
-  );
+  return <WishlistContext.Provider value={value}>{children}</WishlistContext.Provider>;
 }
 
 export function useWishlist() {

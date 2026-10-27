@@ -1,16 +1,14 @@
 "use client";
 
+import { Trash2 } from "lucide-react";
 import { FaStar } from "react-icons/fa6";
-import {
-  CATEGORIES,
-  DIETARY_OPTIONS,
-  GOALS,
-  RATING_OPTIONS,
-} from "@/app/data/shop-filters";
-import { PRODUCTS } from "@/app/data/products";
+import { useState } from "react";
 import { ShopFilters } from "@/app/types/shop";
 import PriceRangeSlider from "./PriceRangeSlider";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { AnimatedAccordionItem } from "@/components/ui/faq-tabs-card";
+
+export type ShopFacet = { slug: string; label: string; count: number };
+export type RatingFacet = { value: number; count: number };
 
 function FilterGroup({
   title,
@@ -19,13 +17,17 @@ function FilterGroup({
   title: string;
   children: React.ReactNode;
 }) {
+  const [open, setOpen] = useState(true);
   return (
-    <Accordion defaultValue={[title]}>
-      <AccordionItem value={title} className="py-4 first:pt-0 last:border-0">
-        <AccordionTrigger className="text-sm font-semibold text-navy">{title}</AccordionTrigger>
-        <AccordionContent className="mt-3 space-y-2">{children}</AccordionContent>
-      </AccordionItem>
-    </Accordion>
+    <AnimatedAccordionItem
+      title={<span className="text-sm font-semibold text-navy">{title}</span>}
+      open={open}
+      onToggle={() => setOpen((current) => !current)}
+      className="py-4 first:pt-0 last:border-0"
+      contentClassName="mt-3 space-y-2"
+    >
+      {children}
+    </AnimatedAccordionItem>
   );
 }
 
@@ -60,11 +62,19 @@ interface Props {
   filters: ShopFilters;
   setGoal: (slug: string) => void;
   toggleCategory: (slug: string) => void;
+  toggleSubCategory: (slug: string) => void;
   toggleDietary: (slug: string) => void;
   setMinRating: (value: number) => void;
   setInStockOnly: (value: boolean) => void;
   setPriceRange: (min: number, max: number) => void;
   clearAll: () => void;
+  categories: ShopFacet[];
+  subCategories: Array<ShopFacet & { parentSlug: string }>;
+  goals: ShopFacet[];
+  dietary: ShopFacet[];
+  ratings: RatingFacet[];
+  priceBounds: { min: number; max: number };
+  inStockCount: number;
   className?: string;
   mobile?: boolean;
 }
@@ -73,37 +83,45 @@ export default function FiltersSidebar({
   filters,
   setGoal,
   toggleCategory,
+  toggleSubCategory,
   toggleDietary,
   setMinRating,
   setInStockOnly,
   setPriceRange,
   clearAll,
+  categories,
+  subCategories,
+  goals,
+  dietary,
+  ratings,
+  priceBounds,
+  inStockCount,
   className = "",
   mobile = false,
 }: Props) {
-  const inStockCount = PRODUCTS.filter((product) => product.inStock).length;
-
   return (
-    <aside className={`${mobile ? "block" : "hidden lg:block"} w-full shrink-0 rounded-2xl border border-line bg-white p-5 lg:w-64 ${className}`}>
+    <aside
+      className={`${mobile ? "block" : "hidden lg:block"} w-full shrink-0 rounded-lg border border-line bg-white p-5 lg:w-64 sticky top-20 h-fit ${className}`}
+    >
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-bold text-navy">Filters</h3>
         <button
           type="button"
           onClick={clearAll}
-          className="text-xs font-medium text-green-600 hover:underline"
+          className="inline-flex items-center gap-1.5 text-xs font-medium text-green-600 hover:underline"
         >
-          Clear All
+          <Trash2 className="h-3.5 w-3.5" />
+          <span>Clear All</span>
         </button>
       </div>
 
       <FilterGroup title="Category">
-        {CATEGORIES.map((c) => (
+        {categories.map((c) => (
           <CheckRow
             key={c.slug}
             label={c.label}
             count={
-              PRODUCTS.filter((product) => product.categorySlug === c.slug)
-                .length
+              c.count
             }
             checked={filters.categories.includes(c.slug)}
             onChange={() => toggleCategory(c.slug)}
@@ -111,20 +129,42 @@ export default function FiltersSidebar({
         ))}
       </FilterGroup>
 
+      {filters.categories.length > 0 && (
+        <FilterGroup title="Sub Category">
+          {subCategories
+            .filter((subCategory) => filters.categories.includes(subCategory.parentSlug))
+            .map((subCategory) => (
+              <CheckRow
+                key={subCategory.slug}
+                label={subCategory.label}
+                count={subCategory.count}
+                checked={filters.subCategories.includes(subCategory.slug)}
+                onChange={() => toggleSubCategory(subCategory.slug)}
+              />
+            ))}
+          {!subCategories.some((subCategory) => filters.categories.includes(subCategory.parentSlug)) && (
+            <p className="pl-6 text-xs text-slate-soft">No subcategories available</p>
+          )}
+        </FilterGroup>
+      )}
+
       <FilterGroup title="Price Range">
         <PriceRangeSlider
           min={filters.priceMin}
           max={filters.priceMax}
+          bounds={priceBounds}
           onChange={setPriceRange}
         />
       </FilterGroup>
 
       <FilterGroup title="Product Goal">
-        {GOALS.filter((g) => g.slug !== "all").map((g) => (
+        {goals.map((g) => (
           <CheckRow
             key={g.slug}
             label={g.label}
-            count={PRODUCTS.filter((product) => product.goalSlug === g.slug).length}
+            count={
+              g.count
+            }
             checked={filters.goals.includes(g.slug)}
             onChange={() =>
               setGoal(filters.goals.includes(g.slug) ? "all" : g.slug)
@@ -134,13 +174,12 @@ export default function FiltersSidebar({
       </FilterGroup>
 
       <FilterGroup title="Dietary Preferences">
-        {DIETARY_OPTIONS.map((d) => (
+        {dietary.map((d) => (
           <CheckRow
             key={d.slug}
             label={d.label}
             count={
-              PRODUCTS.filter((product) => product.dietary.includes(d.slug))
-                .length
+              d.count
             }
             checked={filters.dietary.includes(d.slug)}
             onChange={() => toggleDietary(d.slug)}
@@ -149,7 +188,7 @@ export default function FiltersSidebar({
       </FilterGroup>
 
       <FilterGroup title="Rating">
-        {RATING_OPTIONS.map((r) => (
+        {ratings.map((r) => (
           <label
             key={r.value}
             className="flex cursor-pointer items-center justify-between text-xs text-slate-soft"
@@ -169,7 +208,7 @@ export default function FiltersSidebar({
               </span>
             </span>
             <span>
-              {PRODUCTS.filter((product) => product.rating >= r.value).length}
+              {r.count}
             </span>
           </label>
         ))}

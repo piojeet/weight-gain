@@ -1,43 +1,43 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
-import type { IconType } from "react-icons";
-import { FiArrowRight, FiBell, FiChevronRight, FiCreditCard, FiEdit2, FiLink, FiMoreVertical, FiPlus, FiRefreshCw, FiShield, FiUser } from "react-icons/fi";
-import { PRODUCTS } from "@/app/data/products";
-import { useCart } from "@/app/hooks/useCart";
-
-type MethodType = "card" | "upi" | "wallet";
-type Method = { id: number; type: MethodType; name: string; detail: string; expires?: string; brand?: string; isDefault: boolean };
-const initialMethods: Method[] = [
-  { id: 1, type: "card", name: "Visa", detail: "**** **** **** 4242", expires: "Expires 12/27", brand: "VISA", isDefault: true },
-  { id: 2, type: "card", name: "Mastercard", detail: "**** **** **** 8888", expires: "Expires 09/26", brand: "●●", isDefault: false },
-  { id: 3, type: "card", name: "RuPay", detail: "**** **** **** 1122", expires: "Expires 11/25", brand: "RuPay", isDefault: false },
-  { id: 4, type: "upi", name: "rahulsharma@okicici", detail: "UPI ID", isDefault: true },
-  { id: 5, type: "wallet", name: "PhonePe Wallet", detail: "rahul.sharma@axl", brand: "पे", isDefault: false },
-  { id: 6, type: "wallet", name: "Paytm Wallet", detail: "rahul.sharma@paytm", brand: "paytm", isDefault: false },
-];
-const quickLinks: [string, string, IconType][] = [["Billing & Invoices", "#", FiCreditCard], ["Saved UPI IDs", "#", FiLink], ["Autopay & Subscriptions", "#", FiRefreshCw], ["Payment Settings", "#", FiEdit2], ["Help & Support", "/contact", FiShield]];
-const money = (value: number) => `₹${value.toLocaleString("en-IN")}`;
-
-function MethodRow({ method, setDefault, remove }: { method: Method; setDefault: (id: number, type: MethodType) => void; remove: (id: number) => void }) {
-  return <div className="flex items-center gap-3 rounded-md border border-[#e8edf2] p-3"><div className="flex h-10 w-12 items-center justify-center rounded border border-line text-sm font-extrabold text-navy">{method.brand || <FiCreditCard />}</div><div className="min-w-0 flex-1"><p className="text-[10px] font-extrabold">{method.name} <span className="font-medium">{method.detail}</span></p><p className="mt-1 text-[8px] text-slate-soft">Rahul Sharma {method.expires && <> · {method.expires}</>}</p></div>{method.isDefault && <span className="hidden rounded bg-green-soft px-2 py-1 text-[8px] font-bold text-green-600 sm:block">Default Payment Method</span>}<button type="button" onClick={() => setDefault(method.id, method.type)} className="rounded border border-[#bdc8d6] px-3 py-1.5 text-[8px] font-bold">{method.isDefault ? "Default" : "Set as Default"}</button><button type="button" aria-label={`Remove ${method.name}`} onClick={() => remove(method.id)} className="text-slate-soft"><FiMoreVertical /></button></div>;
-}
-function AddButton({ type, onAdd, children }: { type: MethodType; onAdd: (type: MethodType) => void; children: string }) {
-  return <button type="button" onClick={() => onAdd(type)} className="mt-3 flex w-full items-center justify-center gap-2 rounded border border-dashed border-[#cbd5df] py-2 text-[9px] font-bold text-green-600"><FiPlus />{children}</button>;
-}
+import { FiCreditCard, FiShield } from "react-icons/fi";
 
 export default function PaymentMethodsPage() {
-  const { addItem } = useCart();
-  const [methods, setMethods] = useState(initialMethods);
-  const [modal, setModal] = useState<MethodType | null>(null);
-  const [methodName, setMethodName] = useState("");
-  const [saved, setSaved] = useState(false);
-  const setDefault = (id: number, type: MethodType) => setMethods((current) => current.map((method) => method.type === type ? { ...method, isDefault: method.id === id } : method));
-  const remove = (id: number) => setMethods((current) => current.filter((method) => method.id !== id));
-  const addMethod = () => { if (!modal || !methodName.trim()) return; setMethods((current) => [...current, { id: Date.now(), type: modal, name: methodName.trim(), detail: modal === "card" ? "**** **** **** 0000" : modal === "upi" ? "UPI ID" : "Wallet account", brand: modal === "card" ? "VISA" : undefined, isDefault: false }]); setMethodName(""); setModal(null); setSaved(true); };
-  const cards = methods.filter((method) => method.type === "card");
-  const upis = methods.filter((method) => method.type === "upi");
-  const wallets = methods.filter((method) => method.type === "wallet");
-  return <div className="bg-[#fbfcfd] pb-12"><nav className="text-[10px] text-slate-soft">Home <span className="mx-2">›</span> My Account <span className="mx-2">›</span> <span className="text-navy">Payment Methods</span></nav><header className="mt-5 flex items-end justify-between"><div><h1 className="text-2xl font-extrabold text-navy">Payment Methods</h1><p className="mt-1 text-[10px] text-slate-soft">Manage your saved payment methods for a faster and secure checkout.</p></div><button type="button" onClick={() => setModal("card")} className="flex items-center gap-2 rounded bg-navy-900 px-4 py-2.5 text-[10px] font-bold text-white"><FiPlus />Add New Payment Method</button></header><div className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1fr)_176px]"><div className="min-w-0 space-y-4"><section className="rounded-lg border border-line bg-white p-4 shadow-sm"><h2 className="text-xs font-extrabold">Saved Payment Methods</h2><p className="mt-1 text-[9px] text-slate-soft">Select a payment method during checkout</p><div className="mt-4 grid gap-2">{cards.map((method) => <MethodRow key={method.id} method={method} setDefault={setDefault} remove={remove} />)}</div><AddButton type="card" onAdd={setModal}>Add Credit / Debit / ATM Card</AddButton></section><section className="rounded-lg border border-line bg-white p-4 shadow-sm"><h2 className="text-xs font-extrabold">UPI Accounts</h2><div className="mt-4 grid gap-2">{upis.map((method) => <MethodRow key={method.id} method={method} setDefault={setDefault} remove={remove} />)}</div><AddButton type="upi" onAdd={setModal}>Add New UPI ID</AddButton></section><section className="rounded-lg border border-line bg-white p-4 shadow-sm"><h2 className="text-xs font-extrabold">Wallets</h2><div className="mt-4 grid gap-2">{wallets.map((method) => <MethodRow key={method.id} method={method} setDefault={setDefault} remove={remove} />)}</div><AddButton type="wallet" onAdd={setModal}>Add Wallet</AddButton></section></div><aside className="grid content-start gap-4"><section className="rounded-lg border border-line bg-white p-4 shadow-sm"><h2 className="text-xs font-extrabold">Payment Summary</h2><div className="mt-4 grid gap-3 text-[8px] text-slate-soft"><p>Total Methods <b className="float-right text-navy">{methods.length}</b></p><p>Cards <b className="float-right text-navy">{cards.length}</b></p><p>UPI IDs <b className="float-right text-navy">{upis.length}</b></p><p>Wallets <b className="float-right text-navy">{wallets.length}</b></p></div><hr className="my-4 border-line" /><p className="text-[8px] text-slate-soft">Default Method</p><p className="mt-2 text-[9px] font-extrabold">VISA <span className="ml-2 font-medium">Visa ****4242</span></p><Link href="#transactions" className="mt-4 block rounded border border-green-500 py-1.5 text-center text-[8px] font-bold text-green-600">View Transactions</Link></section><section className="rounded-lg bg-green-soft p-4"><FiShield className="text-lg text-green-600" /><p className="mt-2 text-[9px] font-extrabold">100% Secure Payments</p><p className="mt-1 text-[8px] leading-3 text-slate-soft">Your payment information is encrypted and protected with industry-standard security.</p><div className="mt-3 flex justify-between text-[8px] font-bold text-green-600"><span>PCI DSS</span><span>SSL</span><span>256 bit</span></div></section><section className="rounded-lg border border-line bg-white p-4 shadow-sm"><h2 className="text-xs font-extrabold">Quick Links</h2><div className="mt-3 grid gap-3 text-[8px] text-slate-soft">{quickLinks.map(([label, href, Icon]) => <Link key={label} href={href} className="flex items-center gap-2"><Icon /><span>{label}</span><FiChevronRight className="ml-auto" /></Link>)}</div></section><section className="rounded-lg bg-[#f3f8fc] p-4"><FiUser className="text-xl text-green-600" /><p className="mt-2 text-[9px] font-extrabold">Need Help?</p><p className="mt-1 text-[8px] text-slate-soft">We&apos;re here to help you.</p><Link href="/contact" className="mt-3 block rounded border border-green-500 py-1.5 text-center text-[8px] font-bold text-green-600">Contact Support</Link></section></aside></div><section className="mt-5"><div className="mb-3 flex items-center justify-between"><h2 className="text-xs font-extrabold">You May Also Like</h2><Link href="/shop" className="text-[8px] font-bold text-green-600">View All Products <FiArrowRight className="inline" /></Link></div><div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">{PRODUCTS.slice(0, 6).map((product) => <article key={product.id} className="rounded-md border border-line bg-white p-2 shadow-sm"><img src={product.image} alt={product.name} className="mx-auto h-20 object-contain" /><p className="truncate text-[8px] font-bold">{product.name}</p><p className="mt-1 text-[9px] font-extrabold">{money(product.price)}</p><button type="button" onClick={() => addItem(product.id)} className="mt-2 w-full rounded border border-[#bdc8d6] py-1.5 text-[8px] font-bold">Add to Cart</button></article>)}</div></section>{modal && <div className="fixed inset-0 z-50 flex items-center justify-center bg-navy-900/30 p-4"><form onSubmit={(event) => { event.preventDefault(); addMethod(); }} className="w-full max-w-sm rounded-lg bg-white p-5 shadow-xl"><div className="flex items-center justify-between"><h2 className="text-sm font-extrabold">Add {modal === "card" ? "Payment Card" : modal === "upi" ? "UPI Account" : "Wallet"}</h2><button type="button" onClick={() => setModal(null)} className="text-xl text-slate-soft">×</button></div><label className="mt-5 grid gap-1 text-[10px] font-bold">{modal === "card" ? "Cardholder Name" : modal === "upi" ? "UPI ID" : "Wallet Name"}<input required value={methodName} onChange={(event) => setMethodName(event.target.value)} className="h-9 rounded border border-line px-3 text-xs font-normal outline-none focus:border-green-500" /></label><div className="mt-5 flex justify-end gap-2"><button type="button" onClick={() => setModal(null)} className="rounded border border-line px-4 py-2 text-[10px] font-bold">Cancel</button><button type="submit" className="rounded bg-green-600 px-4 py-2 text-[10px] font-bold text-white">Save Method</button></div></form></div>}{saved && <button type="button" onClick={() => setSaved(false)} className="fixed bottom-5 right-5 rounded bg-green-600 px-4 py-2 text-[10px] font-bold text-white shadow-lg">Payment method added successfully ×</button>}</div>;
+  return (
+    <div className="bg-[#fbfcfd] pb-12">
+      <nav className="text-[10px] text-slate-soft">
+        Home <span className="mx-2">›</span> My Account <span className="mx-2">›</span>{" "}
+        <span className="text-navy">Payment Methods</span>
+      </nav>
+      <header className="mt-5">
+        <h1 className="text-2xl font-extrabold text-navy">Payment Methods</h1>
+        <p className="mt-1 text-[10px] text-slate-soft">
+          Payment details are entered securely in Razorpay Checkout and are not stored by this store.
+        </p>
+      </header>
+      <section className="mt-4 rounded-lg border border-line bg-white p-5 shadow-sm">
+        <div className="flex items-start gap-3">
+          <FiCreditCard className="mt-0.5 text-lg text-green-600" />
+          <div>
+            <h2 className="text-xs font-extrabold">No saved payment methods</h2>
+            <p className="mt-2 max-w-2xl text-[10px] leading-5 text-slate-soft">
+              Tokenized payment-method storage is not enabled for this merchant account. This page will not
+              display sample cards or UPI IDs. Use Razorpay Checkout to choose an available payment method.
+            </p>
+            <Link href="/checkout" className="mt-4 inline-flex rounded bg-green-600 px-4 py-2 text-[10px] font-bold text-white">
+              Continue to secure checkout
+            </Link>
+          </div>
+        </div>
+      </section>
+      <section className="mt-4 rounded-lg bg-green-soft p-4">
+        <FiShield className="text-lg text-green-600" />
+        <p className="mt-2 text-[10px] font-extrabold">Payment security</p>
+        <p className="mt-1 max-w-2xl text-[9px] leading-4 text-slate-soft">
+          Card, UPI and other payment credentials are handled in the provider checkout and are never stored in this account.
+        </p>
+      </section>
+    </div>
+  );
 }

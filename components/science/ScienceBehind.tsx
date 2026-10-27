@@ -18,13 +18,13 @@ export default function ScienceBehind() {
                         <span className="flex size-10 items-center justify-center rounded-full bg-secondary text-xl text-green-600">
                             <Icon />
                         </span>
-                        <p className="mt-3 text-sm font-semibold text-navy">{title}</p>
+                        <p className="mt-3 text-sm font-semibold text-foreground">{title}</p>
                         <p className="mt-1 text-xs leading-relaxed text-slate-soft">{subtitle}</p>
                     </div>
                 ))}
 
                 <div className="relative col-span-2 h-56 overflow-hidden rounded-2xl sm:col-span-1 lg:h-auto">
-                    <Image src={WheyImg} alt="NutriGain Whey Protein tub" fill className="object-cover" />
+                    <Image src={WheyImg} alt="TheGrowthHealth Whey Protein tub" fill className="object-cover" />
                     <span className="absolute top-4 right-4 flex size-16 items-center justify-center rounded-full bg-green-600 p-2 text-center text-[10px] font-semibold text-white">
                         Science You Can Trust
                     </span>

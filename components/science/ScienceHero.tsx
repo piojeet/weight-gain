@@ -25,7 +25,7 @@ export default function ScienceHero() {
                         Backed by Science. Powered by Nature.
                     </p>
                     <p className="mt-3 max-w-md text-sm leading-relaxed text-slate-soft">
-                        At NutriGain, every formula is a perfect blend of scientific research and nature&apos;s finest
+                        At TheGrowthHealth, every formula is a perfect blend of scientific research and nature&apos;s finest
                         ingredients to deliver real results you can feel.
                     </p>
 
@@ -45,7 +45,7 @@ export default function ScienceHero() {
 
                 <div className="relative">
                     <div className="relative h-56 w-full overflow-hidden rounded-2xl sm:h-72 lg:h-80">
-                        <Image src={LabImg} alt="Lab ingredients for NutriGain formulas" fill className="object-cover" />
+                        <Image src={LabImg} alt="Lab ingredients for TheGrowthHealth formulas" fill className="object-cover" />
                     </div>
 
                     <div className="absolute top-4 right-4 w-44 rounded-xl bg-white/95 p-4 shadow-md backdrop-blur-sm sm:w-52">

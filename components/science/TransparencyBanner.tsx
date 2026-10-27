@@ -31,7 +31,7 @@ export default function TransparencyBanner() {
                 </div>
 
                 <div className="relative order-3 h-32 sm:h-40">
-                    <Image src={ProductsImg} alt="NutriGain product lineup" fill className="object-contain" />
+                    <Image src={ProductsImg} alt="TheGrowthHealth product lineup" fill className="object-contain" />
                 </div>
             </div>
         </section>

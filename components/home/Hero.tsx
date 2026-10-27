@@ -10,7 +10,7 @@ import HeroBg from "@/public/hero-bg.png";
 const BENEFITS = [
   { icon: FaLeaf, label: "High Quality Ingredients" },
   { icon: IoFlask, label: "Scientifically Formulated" },
-  { icon: HiShieldCheck, label: "Clean & Transparent" },
+  { icon: HiShieldCheck, label: "Easy to Understand" },
 ];
 
 const STATS = [
@@ -41,7 +41,7 @@ export default function Hero() {
             </h1>
             <p className="text-sm text-slate-soft">
               Thoughtfully formulated nutrition with fully disclosed
-              ingredients, third-party lab testing and clear labels — so you
+              ingredients, independent quality checks and clear labels — so you
               always know exactly what you&apos;re taking.
             </p>
             <ul className="mt-7 flex flex-wrap gap-x-6 gap-y-3">
@@ -70,6 +70,7 @@ export default function Hero() {
                 className="inline-flex min-h-12 items-center rounded-lg border border-navy/25 bg-card px-6 text-sm font-semibold text-navy transition-colors hover:bg-secondary"
               >
                 Explore Range
+                <BsArrowRight className="h-4 w-4" />
               </a>
             </div>
 
@@ -78,28 +79,28 @@ export default function Hero() {
                 {[User1, User1, User1, User1].map((c, i) => (
                   <span
                     key={i}
-                    className="relative grid h-9 w-9 place-items-center overflow-hidden rounded-full border-2 border-card bg-secondary text-xs font-bold text-navy"
+                    className="relative grid size-11 place-items-center overflow-hidden rounded-full border-2 border-card bg-secondary text-xs font-bold text-navy"
                     style={{ zIndex: 4 - i }}
                   >
                     <Image
                       src={c}
                       alt="user"
                       fill
-                      sizes="36px"
+                      sizes="44px"
                       className="object-cover"
                     />
                   </span>
                 ))}
               </div>
               <div>
-                <p className="flex items-center gap-1 text-sm text-slate-soft">
+                <p className="flex items-center gap-1 text-base text-slate-soft">
                   <span className="flex text-star gap-0.5">
                     {Array.from({ length: 5 }).map((_, i) => (
-                      <IoStar key={i} className="h-3.5 w-3.5 fill-current" />
+                      <IoStar key={i} className="size-4 fill-current" />
                     ))}
                   </span>
                 </p>
-                <p className="text-sm font-semibold text-ink">
+                <p className="text-base font-semibold text-ink">
                   Trusted by 10,000+ customers
                 </p>
               </div>
@@ -121,13 +122,13 @@ export default function Hero() {
             {STATS.map((s, i) => (
               <div
                 key={s.value + s.label}
-                className={`animate-fade-up absolute ${s.pos} w-[112px] rounded-2xl border border-line/60 bg-linear-to-br from-card via-card/95 to-card/80 p-3 shadow-[0_8px_24px_-4px_rgba(16,42,67,0.15),0_2px_8px_-2px_rgba(16,42,67,0.1)] backdrop-blur-md sm:w-[132px] sm:p-4`}
+                className={`animate-fade-up absolute ${s.pos} w-28 rounded-2xl border border-line/60 bg-linear-to-br from-card via-card/95 to-card/80 p-3 shadow-[0_8px_24px_-4px_rgba(16,42,67,0.15),0_2px_8px_-2px_rgba(16,42,67,0.1)] backdrop-blur-md sm:w-33 sm:p-4`}
                 style={{ animationDelay: `${200 + i * 120}ms` }}
               >
                 <p className="font-display text-xl font-extrabold text-navy sm:text-2xl">
                   {s.value}
                 </p>
-                <p className="mt-0.5 text-[10px] leading-snug text-slate-soft sm:text-[11px]">
+                <p className="mt-0.5 text-xs leading-snug text-slate-soft">
                   {s.label}
                 </p>
               </div>

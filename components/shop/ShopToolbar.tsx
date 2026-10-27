@@ -1,7 +1,7 @@
 import { IoSearchOutline } from "react-icons/io5";
 import { SORT_LABELS } from "@/app/data/shop-filters";
 import { SortOption } from "@/app/types/shop";
-import { Select } from "@/components/ui/select";
+import { AnimatedSelect } from "@/components/ui/AnimatedSelect";
 
 export default function ShopToolbar({
   total,
@@ -34,22 +34,18 @@ export default function ShopToolbar({
             value={search}
             onChange={(e) => onSearch(e.target.value)}
             placeholder="Search products..."
-            className="w-full rounded-lg border border-line py-2 pr-3 pl-9 text-xs outline-none focus:border-navy sm:block sm:w-56"
+            className="w-full rounded-md border border-line py-2.5 min-h-10 pr-3 pl-9 text-xs outline-none focus:border-navy sm:block sm:w-56"
           />
           <IoSearchOutline className="absolute top-1/2 left-3 -translate-y-1/2 text-sm text-slate-soft" />
         </div>
 
-        <Select
+        <AnimatedSelect
           value={sort}
           onChange={(e) => onSort(e.target.value as SortOption)}
-          className="rounded-lg border border-line py-2 px-3 text-xs text-navy outline-none focus:border-navy"
-        >
-          {Object.entries(SORT_LABELS).map(([value, label]) => (
-            <option key={value} value={value}>
-              Sort by: {label}
-            </option>
-          ))}
-        </Select>
+          size="md"
+          options={Object.entries(SORT_LABELS).map(([value, label]) => ({ value, label: `Sort by: ${label}` }))}
+          className="min-w-36"
+        />
       </div>
     </div>
   );

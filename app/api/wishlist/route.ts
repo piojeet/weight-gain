@@ -18,15 +18,15 @@ function readWishlist(request: Request) {
     const ids = JSON.parse(decodeURIComponent(value));
     if (!Array.isArray(ids)) return [];
     return ids.filter(
-      (id): id is number =>
-        typeof id === "number" && PRODUCTS.some((product) => product.id === id),
+      (id): id is string | number =>
+        (typeof id === "string" || typeof id === "number") && PRODUCTS.some((product) => String(product.id) === String(id)),
     );
   } catch {
     return [];
   }
 }
 
-function responseWithWishlist(request: Request, productIds: number[]) {
+function responseWithWishlist(request: Request, productIds: Array<string | number>) {
   const response = NextResponse.json({ productIds });
   response.cookies.set(COOKIE_NAME, encodeURIComponent(JSON.stringify(productIds)), {
     httpOnly: true,
@@ -41,8 +41,8 @@ function responseWithWishlist(request: Request, productIds: number[]) {
 function validProductIds(value: unknown) {
   if (!Array.isArray(value)) return null;
   const productIds = value.filter(
-    (id): id is number =>
-      typeof id === "number" && PRODUCTS.some((product) => product.id === id),
+    (id): id is string | number =>
+      (typeof id === "string" || typeof id === "number") && PRODUCTS.some((product) => String(product.id) === String(id)),
   );
   return [...new Set(productIds)];
 }
@@ -57,8 +57,8 @@ export async function POST(request: Request) {
     productIds?: unknown;
   };
   if (
-    typeof productId !== "number" ||
-    !PRODUCTS.some((product) => product.id === productId)
+    typeof productId !== "string" && typeof productId !== "number" ||
+    !PRODUCTS.some((product) => String(product.id) === String(productId))
   ) {
     return NextResponse.json({ error: "Invalid product" }, { status: 400 });
   }
@@ -74,7 +74,7 @@ export async function DELETE(request: Request) {
     ? (JSON.parse(body) as { productId?: unknown; productIds?: unknown })
     : {};
   if (productId === undefined) return responseWithWishlist(request, []);
-  if (typeof productId !== "number") return NextResponse.json({ error: "Invalid product" }, { status: 400 });
+  if (typeof productId !== "string" && typeof productId !== "number") return NextResponse.json({ error: "Invalid product" }, { status: 400 });
 
   const productIds = (validProductIds(requestedIds) ?? readWishlist(request)).filter(
     (id) => id !== productId,

@@ -28,12 +28,21 @@ const ICON_LINKS = [
 
 export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
   const pathname = usePathname();
   const { productIds } = useWishlist();
   const { items } = useCart();
   const cartCount = items.reduce((total, item) => total + item.quantity, 0);
   const isRouteActive = (href: string) =>
     href === "/shop" ? pathname === "/shop" || pathname.startsWith("/product") : pathname === href || pathname.startsWith(`${href}/`);
+
+  useEffect(() => {
+    const handleScroll = () => setIsScrolled(window.scrollY > 0);
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
+
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   useEffect(() => {
     const previousOverflow = document.body.style.overflow;
@@ -45,7 +54,9 @@ export default function Header() {
   }, [menuOpen]);
 
   return (
-    <header className="relative border-b border-gray-100 bg-white">
+    <header
+      className={`fixed inset-x-0 z-50 border-b border-gray-100 bg-white transition-[top] duration-300 ${isScrolled ? "top-0" : "top-0 lg:top-8"}`}
+    >
       <nav className="container-page flex items-center justify-between gap-2 py-3">
         <button
           type="button"
@@ -89,11 +100,25 @@ export default function Header() {
                 className={`relative flex size-9 shrink-0 items-center justify-center rounded-full text-lg ${isActive ? "bg-green-soft text-green-600" : "hover:bg-blue-50"}`}
               >
                 <Icon />
-                {count > 0 && (
-                  <span className="absolute top-1 right-1 flex size-3.5 items-center justify-center rounded-full bg-green-500 text-[9px] font-medium leading-none text-white">
-                    {count}
-                  </span>
+                {(href === "/cart" || href === "/wishlist") && (
+                  <span
+                    id={href === "/cart" ? "cart-animation-target" : "wishlist-animation-target"}
+                    aria-hidden="true"
+                    className="pointer-events-none absolute inset-0"
+                  />
                 )}
+                <span
+                  className={`absolute top-1 right-1 flex size-3.5 items-center justify-center rounded-full bg-green-500 text-[9px] font-medium leading-none text-white transition-opacity ${count > 0 ? "opacity-100" : "pointer-events-none opacity-0"}`}
+                  style={
+                    href === "/cart"
+                      ? { viewTransitionName: "cart-counter" }
+                      : href === "/wishlist"
+                        ? { viewTransitionName: "wishlist-counter" }
+                        : undefined
+                  }
+                >
+                  {count}
+                </span>
               </Link>
               );
             })}

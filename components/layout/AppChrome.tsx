@@ -15,7 +15,12 @@ export default function AppChrome({ children }: { children: React.ReactNode }) {
   if (authRoutes.has(pathname)) return <main className="flex-1">{children}</main>;
 
   return <>
-    <div><TopBar /><Header /><SearchMobile /></div>
+    <div>
+      <TopBar />
+      <Header />
+      <div aria-hidden="true" className="h-15 lg:h-17" />
+      <SearchMobile />
+    </div>
     <main className="flex-1">{children}</main>
     <BottomMobileHeader />
     <Newsletter />

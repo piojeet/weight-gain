@@ -43,7 +43,7 @@ export default function CommitmentSection() {
         <div className="relative h-64 lg:h-auto">
           <Image
             src={GymImg}
-            alt="Person using NutriGain shaker at the gym"
+            alt="Person using TheGrowthHealth shaker at the gym"
             fill
             className="object-cover"
           />

@@ -8,7 +8,7 @@ export default function Logo() {
           <span className="text-black">Nutri</span>
           <span className="text-green-500">Gain</span>
         </span>
-        <span className="uppercase text-[10px] leading-none">SCIENCE • NUTRITION • RESULTS</span>
+        <span className="text-xs leading-none">Science, nutrition, results</span>
       </Link>
     </div>
   );

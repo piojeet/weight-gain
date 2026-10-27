@@ -1,8 +1,85 @@
 @import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap");
+@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400..700&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&family=Sora:wght@100..800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400..700&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400..700&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&family=Manrope:wght@200..800&family=Sora:wght@100..800&display=swap');
+
 @import "tailwindcss";
+
+@supports (view-transition-name: none) {
+  ::view-transition-group(cart-dot) {
+    animation-duration: 0.6s;
+    animation-timing-function: ease-in;
+  }
+
+  ::view-transition-group(wishlist-dot) {
+    animation-duration: 0.6s;
+    animation-timing-function: ease-in;
+  }
+
+  ::view-transition-old(cart-counter) {
+    animation: cart-counter-down 0.15s cubic-bezier(0.4, 0, 1, 1) both;
+  }
+
+  ::view-transition-new(cart-counter) {
+    animation: cart-counter-up 0.15s cubic-bezier(0, 0, 0.2, 1) 0.15s both;
+  }
+
+  ::view-transition-old(wishlist-counter) {
+    animation: cart-counter-down 0.15s cubic-bezier(0.4, 0, 1, 1) both;
+  }
+
+  ::view-transition-new(wishlist-counter) {
+    animation: cart-counter-up 0.15s cubic-bezier(0, 0, 0.2, 1) 0.15s both;
+  }
+}
+
+@keyframes cart-counter-down {
+  from { transform: translateY(0); opacity: 1; }
+  to { transform: translateY(4px); opacity: 0; }
+}
+
+@keyframes cart-counter-up {
+  from { transform: translateY(-3px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}
+
+.cart-animation-dot {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 12px;
+  height: 12px;
+  border-radius: 9999px;
+  background: var(--green-500);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.wishlist-animation-dot {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 12px;
+  height: 12px;
+  border-radius: 9999px;
+  background: var(--green-600);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
 
 @theme inline {
   --font-sans: var(--font-sans);
+  --font-jetbrains: var(--font-jetbrains);
+  --font-sora: var(--font-sora);
+  --font-manrope: var(--font-manrope);
 
   /* Primary */
   --color-navy-900: var(--navy-900);
@@ -41,10 +118,16 @@
   --color-secondary: var(--secondary);
   --color-star: var(--star);
   --color-slate-soft: var(--slate-soft);
+
+  --color-foreground: var(--foreground);
+  --color-muted-foreground: var(--muted-foreground);
 }
 
 :root {
   --font-sans: "Plus Jakarta Sans", sans-serif;
+  --font-jetbrains: "JetBrains Mono", monospace;
+  --font-sora: "Sora", sans-serif;
+  --font-manrope: "Manrope", sans-serif;
 
   /* shadcn/ui semantic tokens */
   --background: #fbfcfe;
@@ -55,13 +138,13 @@
   --secondary-foreground: #102a43;
   --muted: #f7f8fa;
   --muted-foreground: #64748b;
-  --accent: #eef8f2;
+  --accent: #edf8f1;
   --accent-foreground: #1e7a3b;
   --destructive: #dc2626;
   --destructive-foreground: #ffffff;
   --border: #e2e8f0;
   --input: #e2e8f0;
-  --ring: #2fa84f;
+  --ring: #1e7a3b;
   --radius: 0.5rem;
 
   /* Primary */
@@ -70,7 +153,7 @@
   --light-blue: #f3f5fc;
 
   /* Accent */
-  --green-500: #2fa84f;
+  --green-500: #2d8d4a;
   --green-600: #1e7a3b;
 
   /* Category accents */
@@ -91,8 +174,8 @@
   --gray-700: #374151;
   --black: #000000;
 
-  --green-soft: #eef8f2;
-  --brand-green: #2f7d5b;
+  --green-soft: #edf8f1;
+  --brand-green: #1e7a3b;
   --brand-blue: #245b8f;
   --line: #e2e8f0;
   --card: #ffffff;
@@ -101,6 +184,9 @@
   --secondary: #eef6ff;
   --star: #f59e0b;
   --slate-soft: #64748b;
+
+  --foreground: oklch(27% .045 177);
+  --muted-foreground: oklch(53% .025 174);
 
   --gradient-blue: linear-gradient(180deg, #ffffff 0%, #f2f8ff 100%);
   --gradient-green: linear-gradient(180deg, #ffffff 0%, #eef8f2 100%);
@@ -163,7 +249,7 @@ button:active:not(:disabled) {
   height: 16px;
   border-radius: 9999px;
   background: var(--white);
-  border: 3px solid var(--green-500);
+  border: 3px solid var(--green-600);
   cursor: pointer;
 }
 
@@ -173,6 +259,6 @@ button:active:not(:disabled) {
   height: 16px;
   border-radius: 9999px;
   background: var(--white);
-  border: 3px solid var(--green-500);
+  border: 3px solid var(--green-600);
   cursor: pointer;
 }

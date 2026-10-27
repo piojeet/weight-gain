@@ -246,7 +246,7 @@ export default function BlogPage() {
             <div className="relative left-1/2 min-h-40 -translate-x-1/2 overflow-hidden border-y border-line bg-white px-5 py-7 shadow-sm sm:px-8 lg:rounded-lg lg:border">
               <div className="relative z-10 max-w-sm">
                 <h1 className="text-[28px] font-extrabold tracking-tight sm:text-[32px]">
-                  NutriGain <span className="text-green-600">Blog</span>
+                  TheGrowthHealth <span className="text-green-600">Blog</span>
                 </h1>
                 <p className="mt-2 text-xs leading-5 text-slate-soft">
                   Stay informed with expert-backed articles on nutrition,

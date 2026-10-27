@@ -3,7 +3,7 @@ import {
   FaFacebookF,
   FaInstagram,
   FaEnvelope,
-  FaTwitter,
+  FaXTwitter,
   FaFlask,
   FaShieldHalved,
   FaFlag,
@@ -53,8 +53,8 @@ const FOOTER_LINKS = [
 const SOCIALS = [
   { label: "Facebook", href: "https://www.facebook.com/", icon: FaFacebookF },
   { label: "Instagram", href: "https://www.instagram.com/", icon: FaInstagram },
-  { label: "Email", href: "mailto:support@nutrigain.in", icon: FaEnvelope },
-  { label: "Twitter", href: "https://twitter.com/", icon: FaTwitter },
+  { label: "Email", href: "mailto:support@thegrowthhealth.com", icon: FaEnvelope },
+  { label: "X", href: "https://x.com/", icon: FaXTwitter },
 ];
 
 const BADGES = [
@@ -64,10 +64,10 @@ const BADGES = [
 ];
 
 const PAYMENT_METHODS = [
-  { name: "Visa", src: Visa, bg: "bg-[#024394]" },
-  { name: "Mastercard", src: Mastercard, bg: "bg-[#000200]" },
-  { name: "RuPay", src: Rupay, bg: "bg-white" },
-  { name: "UPI", src: UPI, bg: "bg-white" },
+  { name: "Visa", src: Visa },
+  { name: "Mastercard", src: Mastercard },
+  { name: "RuPay", src: Rupay },
+  { name: "UPI", src: UPI },
 ];
 
 export default function Footer() {
@@ -112,10 +112,10 @@ export default function Footer() {
         <div className="col-span-2 sm:col-span-1">
           <h4 className="mb-4 text-sm font-semibold text-white">We Accept</h4>
           <div className="flex flex-wrap gap-2">
-            {PAYMENT_METHODS.map(({ name, src, bg }) => (
+            {PAYMENT_METHODS.map(({ name, src }) => (
               <span
                 key={name}
-                className={`flex h-7 w-11 items-center justify-center rounded-md ${bg} gap-4 px-1`}
+                className="flex h-7 w-11 items-center justify-center gap-4 rounded-md bg-white px-1"
               >
                 <Image
                   src={src}
@@ -127,8 +127,8 @@ export default function Footer() {
               </span>
             ))}
           </div>
-          <p className="mt-5 text-xs font-semibold text-white">
-            🔒 100% Secure Payments
+          <p className="mt-5 flex items-center gap-1 text-xs font-semibold text-white">
+            <span aria-hidden="true">🔒</span> 100% Secure Payments
           </p>
           <p className="mt-1 text-xs text-gray-400">
             Your payments are safe with us.
@@ -138,7 +138,7 @@ export default function Footer() {
 
       <div className="border-t border-white/10">
         <div className="container-page flex flex-col items-center gap-3 py-5 text-xs text-gray-400 sm:flex-row sm:justify-between">
-          <p>© {new Date().getFullYear()} NutriGain. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} TheGrowthHealth. All rights reserved.</p>
           <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
             {BADGES.map(({ label, icon: Icon }) => (
               <span key={label} className="flex items-center gap-1.5">

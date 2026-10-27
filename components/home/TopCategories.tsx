@@ -1,13 +1,25 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { IoArrowForward } from "react-icons/io5";
-import { CATEGORIES } from "@/app/data/shop-filters";
-import { PRODUCTS } from "@/app/data/products";
+import { commerceApi, type CategoryFacet } from "@/lib/api/commerce";
 
 export default function TopCategories() {
+  const [categories, setCategories] = useState<CategoryFacet[]>([]);
+
+  useEffect(() => {
+    let active = true;
+    commerceApi.products("?page=1&pageSize=1")
+      .then(({ facets }) => { if (active) setCategories(facets.categories); })
+      .catch(() => { if (active) setCategories([]); });
+    return () => { active = false; };
+  }, []);
+
   return (
     <section className="container-page md:py-16 py-10">
-      <div className="flex items-end justify-between">
+      <div className="flex items-center justify-between">
         <div>
           <h2 className="font-display text-2xl md:text-3xl font-extrabold text-navy sm:text-4xl">
             Shop by Category
@@ -23,12 +35,7 @@ export default function TopCategories() {
       </div>
 
       <div className="md:mt-10 mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
-        {CATEGORIES.map(({ slug, label, image }) => {
-          const count = PRODUCTS.filter(
-            (product) => product.categorySlug === slug,
-          ).length;
-
-          return (
+        {categories.map(({ slug, label, image, count }) => (
           <Link
             key={slug}
             href={`/shop?category=${slug}`}
@@ -36,7 +43,7 @@ export default function TopCategories() {
           >
             <div className="relative h-32 w-full overflow-hidden sm:h-36">
               <Image
-                src={image}
+                src={image || "/categories/mass-gainer.jpg"}
                 alt={label}
                 fill
                 className="object-cover transition-transform duration-300 group-hover:scale-105"
@@ -45,13 +52,12 @@ export default function TopCategories() {
             </div>
             <div className="p-3">
               <p className="text-sm font-semibold text-navy">{label}</p>
-              <p className="mt-0.5 text-[11px] text-slate-soft">
+              <p className="mt-0.5 text-xs text-slate-soft">
                 {count} Products
               </p>
             </div>
           </Link>
-          );
-        })}
+        ))}
       </div>
 
       <div className="mt-6 flex justify-center sm:hidden">

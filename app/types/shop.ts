@@ -1,14 +1,22 @@
 import { IconType } from "react-icons";
 
 export interface Product {
-  id: number;
+  id: string | number;
   slug: string;
   name: string;
   description: string;
   image: string;
-  categorySlug: string;
-  categoryLabel: string;
-  goalSlug: string;
+  images?: string[];
+  categorySlug: string | null;
+  categoryLabel: string | null;
+  categoryId?: string | null;
+  categoryRootId?: string | null;
+  subCategoryId?: string | null;
+  subCategorySlug?: string | null;
+  subCategoryLabel?: string | null;
+  goalSlug: string | null;
+  goalLabel?: string | null;
+  dietaryPreferences?: string[];
   badge: "BESTSELLER" | "NEW" | "LAB TESTED" | null;
   stats: { label: string; value: string }[];
   rating: number;
@@ -18,7 +26,8 @@ export interface Product {
   discountPercent: number | null;
   dietary: string[];
   inStock: boolean;
-  createdAt: string; // ISO date, used for "Newest" sort
+  createdAt: string;
+  variants?: { id: string; attributes: Record<string, unknown>; priceOverride: number | null; stock: number }[];
   details: ProductDetailContent;
 }
 
@@ -73,6 +82,7 @@ export type SortOption =
 
 export interface ShopFilters {
   categories: string[];
+  subCategories: string[];
   goals: string[];
   dietary: string[];
   minRating: number | null;

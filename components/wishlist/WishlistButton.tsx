@@ -2,8 +2,9 @@
 
 import { FiHeart } from "react-icons/fi";
 import { useWishlist } from "@/app/hooks/useWishlist";
+import { animateCartAddition } from "@/lib/cart-animation";
 
-export default function WishlistButton({ productId }: { productId: number }) {
+export default function WishlistButton({ productId }: { productId: string | number }) {
   const { isWishlisted, toggleWishlist } = useWishlist();
   const wishlisted = isWishlisted(productId);
 
@@ -15,11 +16,16 @@ export default function WishlistButton({ productId }: { productId: number }) {
       onClick={(event) => {
         event.preventDefault();
         event.stopPropagation();
-        void toggleWishlist(productId);
+        void animateCartAddition(event.currentTarget, () => toggleWishlist(productId), {
+          dotClass: "wishlist-animation-dot",
+          dotViewTransitionName: "wishlist-dot",
+          targetId: "wishlist-animation-target",
+          reverse: wishlisted,
+        });
       }}
-      className="flex size-8 items-center justify-center rounded-full text-navy hover:bg-gray-50"
+      className="relative flex size-8 items-center justify-center rounded-md text-navy hover:bg-gray-50 border border-gray-200 cursor-pointer bg-white"
     >
-      <FiHeart className={wishlisted ? "fill-red-500 text-red-500" : ""} />
+      <FiHeart className={wishlisted ? "fill-green-600 text-green-600" : ""} />
     </button>
   );
 }

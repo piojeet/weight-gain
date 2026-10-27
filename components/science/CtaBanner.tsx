@@ -16,7 +16,7 @@ export default function CtaBanner() {
                             Results that Last.
                         </h2>
                         <p className="mt-2 max-w-xs text-xs text-white/70">
-                            Choose NutriGain – Where Science Meets Nutrition.
+                            Choose TheGrowthHealth – Where Science Meets Nutrition.
                         </p>
                     </div>
 

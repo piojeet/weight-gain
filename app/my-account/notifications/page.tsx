@@ -2,15 +2,17 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { FiArrowRight, FiBell, FiBookOpen, FiCheck, FiChevronDown, FiChevronRight, FiGift, FiHeart, FiLock, FiMail, FiMessageSquare, FiMoon, FiPercent, FiShield, FiStar } from "react-icons/fi";
 import type { IconType } from "react-icons";
 import { PRODUCTS } from "@/app/data/products";
-import { useCart } from "@/app/hooks/useCart";
 import { useWishlist } from "@/app/hooks/useWishlist";
+import { AnimatedSwitch } from "@/components/ui/animated-switch";
+import AddToCartButton from "@/components/cart/AddToCartButton";
+import { customerApi, type NotificationPreferences } from "@/lib/api/customer";
 
 type Channel = "email" | "sms" | "push";
-type Preferences = Record<string, Record<Channel, boolean>>;
+type Preferences = NotificationPreferences["categories"];
 
 const categories = [
   { name: "Order Updates", detail: "Get updates about your orders and deliveries", example: "Order placed, shipped, out for delivery, delivered, cancelled", icon: FiLock, tone: "green" },
@@ -22,37 +24,101 @@ const categories = [
   { name: "Reminders", detail: "Helpful reminders to stay on track", example: "Reorder reminders, goal reminders, subscription alerts", icon: FiBell, tone: "yellow" },
 ];
 
-const initialPreferences: Preferences = Object.fromEntries(categories.map(({ name }, index) => [name, { email: index !== 6, sms: index === 0 || index === 4 || index === 6, push: index !== 3 }])) as Preferences;
+const initialPreferences: Preferences = Object.fromEntries(categories.map(({ name }) => [name, { email: false, sms: false, push: false }])) as Preferences;
 const recommendations = [1, 2, 3, 4, 5, 6].flatMap((id) => { const product = PRODUCTS.find((item) => item.id === id); return product ? [product] : []; });
 const money = (value: number) => `₹${value.toLocaleString("en-IN")}`;
 
-function Toggle({ enabled, onChange, label }: { enabled: boolean; onChange: () => void; label: string }) {
-  return <button type="button" role="switch" aria-checked={enabled} aria-label={label} onClick={onChange} className={`relative h-4 w-8 rounded-full transition ${enabled ? "bg-green-600" : "bg-[#d9e0e8]"}`}><span className={`absolute top-0.5 size-3 rounded-full bg-white shadow-sm transition ${enabled ? "left-4.25" : "left-0.5"}`} /></button>;
+function Toggle({ enabled, onChange, label, disabled = false }: { enabled: boolean; onChange: () => void; label: string; disabled?: boolean }) {
+  return <AnimatedSwitch checked={enabled} onCheckedChange={onChange} aria-label={label} disabled={disabled} className="h-5 w-9" />;
 }
 
 export default function NotificationSettingsPage() {
   const [preferences, setPreferences] = useState(initialPreferences);
-  const [quietHours, setQuietHours] = useState(true);
+  const [quietHours, setQuietHours] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
-  const { addItem } = useCart();
+  const [error, setError] = useState("");
+  const preferencesRef = useRef<Preferences>(initialPreferences);
+  const savedPreferencesRef = useRef<Preferences>(initialPreferences);
+  const quietHoursRef = useRef(false);
+  const savedQuietHoursRef = useRef(false);
+  const requestQueue = useRef<Promise<void>>(Promise.resolve());
+  const revision = useRef(0);
   const { isWishlisted, toggleWishlist } = useWishlist();
   const activeCount = Object.values(preferences).flatMap((channels) => Object.values(channels)).filter(Boolean).length;
-  const toggle = (category: string, channel: Channel) => { setSaved(false); setPreferences((current) => ({ ...current, [category]: { ...current[category], [channel]: !current[category][channel] } })); };
-  const setAll = (enabled: boolean) => { setSaved(false); setPreferences(Object.fromEntries(categories.map(({ name }) => [name, { email: enabled, sms: enabled, push: enabled }])) as Preferences); };
+  useEffect(() => {
+    let active = true;
+    customerApi.notificationPreferences().then(({ preferences: result }) => {
+      if (!active) return;
+      preferencesRef.current = result.categories;
+      savedPreferencesRef.current = result.categories;
+      quietHoursRef.current = result.quietHoursEnabled;
+      savedQuietHoursRef.current = result.quietHoursEnabled;
+      setPreferences(result.categories);
+      setQuietHours(result.quietHoursEnabled);
+      setError("");
+    }).catch((cause) => {
+      if (active) setError(cause instanceof Error ? cause.message : "Unable to load notification preferences. Sign in and try again.");
+    }).finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, []);
+  const persist = (next: Preferences, nextQuietHours: boolean) => {
+    preferencesRef.current = next;
+    quietHoursRef.current = nextQuietHours;
+    setPreferences(next);
+    setQuietHours(nextQuietHours);
+    setSaved(false);
+    setError("");
+    setSaving(true);
+    const currentRevision = ++revision.current;
+    requestQueue.current = requestQueue.current.catch(() => undefined).then(async () => {
+      try {
+        await customerApi.updateNotificationPreferences({ categories: next, quietHoursEnabled: nextQuietHours });
+        if (currentRevision === revision.current) {
+          savedPreferencesRef.current = next;
+          savedQuietHoursRef.current = nextQuietHours;
+          setSaved(true);
+        }
+      } catch (cause) {
+        if (currentRevision === revision.current) {
+          preferencesRef.current = savedPreferencesRef.current;
+          quietHoursRef.current = savedQuietHoursRef.current;
+          setPreferences(savedPreferencesRef.current);
+          setQuietHours(savedQuietHoursRef.current);
+          setError(cause instanceof Error ? cause.message : "Unable to save notification preferences.");
+        }
+        throw cause;
+      } finally {
+        if (currentRevision === revision.current) setSaving(false);
+      }
+    }).catch(() => undefined);
+  };
+  const toggle = (category: string, channel: Channel) => {
+    const next = { ...preferencesRef.current, [category]: { ...preferencesRef.current[category], [channel]: !preferencesRef.current[category][channel] } };
+    persist(next, quietHoursRef.current);
+  };
+  const setAll = (enabled: boolean) => {
+    persist(Object.fromEntries(categories.map(({ name }) => [name, { email: enabled, sms: enabled, push: enabled }])) as Preferences, quietHoursRef.current);
+  };
+  const toggleQuietHours = () => persist(preferencesRef.current, !quietHoursRef.current);
 
   return <section className="bg-[#fbfcfe] py-7 text-navy">
     <div className="text-[10px] text-slate-soft">Home <span className="mx-2">›</span> My Account <span className="mx-2">›</span> <span className="text-navy">Notification Settings</span></div>
-    <div className="mt-3 flex items-start justify-between gap-4"><div><h1 className="text-[22px] font-extrabold tracking-tight">Notification Settings</h1><p className="mt-1 text-xs text-slate-soft">Manage how you want to stay updated with NutriGain.</p></div><button type="button" className="hidden items-center gap-2 rounded border border-[#94a3b8] px-3 py-2 text-[10px] font-bold sm:flex"><FiBookOpen /> How it works</button></div>
+    <div className="mt-3 flex items-start justify-between gap-4"><div><h1 className="text-[22px] font-extrabold tracking-tight">Notification Settings</h1><p className="mt-1 text-xs text-slate-soft">Manage how you want to stay updated with TheGrowthHealth.</p></div><button type="button" className="hidden items-center gap-2 rounded border border-[#94a3b8] px-3 py-2 text-[10px] font-bold sm:flex"><FiBookOpen /> How it works</button></div>
 
+    {loading && <p role="status" className="mt-4 text-sm text-slate-soft">Loading saved preferences...</p>}
+    {error && <p role="alert" className="mt-4 rounded border border-red-200 bg-red-50 p-3 text-xs text-red-700">{error} {error.includes("Unauthorized") && <Link className="font-bold underline" href="/login">Sign in</Link>}</p>}
+    <p className="mt-3 text-[9px] text-slate-soft">These settings save automatically. Delivery depends on available email, SMS, and push integrations.</p>
     <div className="mt-6 grid gap-4 xl:grid-cols-[minmax(0,1fr)_235px]">
-      <div className="min-w-0 rounded-lg border border-line bg-white p-3 shadow-sm"><div className="flex items-center justify-between border-b border-line px-1 pb-3"><h2 className="text-xs font-extrabold">Choose what notifications you want to receive</h2><div className="flex gap-4 text-[8px] font-bold"><button type="button" onClick={() => setAll(true)} className="text-green-600">Enable All</button><button type="button" onClick={() => setAll(false)} className="text-red-500">Disable All</button></div></div><div className="mt-2 grid gap-2">{categories.map(({ name, detail, example, icon: Icon, tone }) => <div key={name} className="grid grid-cols-[38px_minmax(0,1fr)_42px_42px_42px_12px] items-center gap-2 rounded-md border border-[#edf0f4] px-3 py-3 sm:grid-cols-[46px_minmax(0,1fr)_48px_48px_48px_14px] sm:gap-3"><span className={`flex size-8 items-center justify-center rounded-full sm:size-9 ${tone === "green" ? "bg-green-soft text-green-600" : tone === "purple" ? "bg-purple-50 text-purple-500" : tone === "orange" ? "bg-orange-50 text-orange-500" : tone === "blue" ? "bg-blue-50 text-blue-500" : tone === "pink" ? "bg-pink-50 text-pink-500" : tone === "teal" ? "bg-teal-50 text-teal-500" : "bg-amber-50 text-amber-500"}`}><Icon size={18} /></span><div className="min-w-0"><p className="truncate text-[10px] font-extrabold">{name}</p><p className="mt-1 truncate text-[8px] text-slate-soft">{detail}</p><p className="mt-1 hidden truncate text-[7px] text-slate-soft sm:block">{example}</p></div>{(["email", "sms", "push"] as Channel[]).map((channel) => <div key={channel} className="grid justify-items-center gap-2"><span className="text-[7px] capitalize text-slate-soft">{channel}</span><Toggle enabled={preferences[name][channel]} onChange={() => toggle(name, channel)} label={`${name} ${channel}`} /></div>)}<FiChevronRight className="text-slate-soft" size={13} /></div>)}</div></div>
+      <div className="min-w-0 rounded-lg border border-line bg-white p-3 shadow-sm"><div className="flex items-center justify-between border-b border-line px-1 pb-3"><h2 className="text-xs font-extrabold">Choose what notifications you want to receive</h2><div className="flex gap-4 text-[8px] font-bold"><button type="button" disabled={loading} onClick={() => setAll(true)} className="text-green-600 disabled:opacity-50">Enable All</button><button type="button" disabled={loading} onClick={() => setAll(false)} className="text-red-500 disabled:opacity-50">Disable All</button></div></div><div className="mt-2 grid gap-2">{categories.map(({ name, detail, example, icon: Icon, tone }) => <div key={name} className="grid grid-cols-[38px_minmax(0,1fr)_42px_42px_42px_12px] items-center gap-2 rounded-md border border-[#edf0f4] px-3 py-3 sm:grid-cols-[46px_minmax(0,1fr)_48px_48px_48px_14px] sm:gap-3"><span className={`flex size-8 items-center justify-center rounded-full sm:size-9 ${tone === "green" ? "bg-green-soft text-green-600" : tone === "purple" ? "bg-purple-50 text-purple-500" : tone === "orange" ? "bg-orange-50 text-orange-500" : tone === "blue" ? "bg-blue-50 text-blue-500" : tone === "pink" ? "bg-pink-50 text-pink-500" : tone === "teal" ? "bg-teal-50 text-teal-500" : "bg-amber-50 text-amber-500"}`}><Icon size={18} /></span><div className="min-w-0"><p className="truncate text-[10px] font-extrabold">{name}</p><p className="mt-1 truncate text-[8px] text-slate-soft">{detail}</p><p className="mt-1 hidden truncate text-[7px] text-slate-soft sm:block">{example}</p></div>{(["email", "sms", "push"] as Channel[]).map((channel) => <div key={channel} className="grid justify-items-center gap-2"><span className="text-[7px] capitalize text-slate-soft">{channel}</span><Toggle enabled={preferences[name]?.[channel] ?? false} onChange={() => toggle(name, channel)} label={`${name} ${channel}`} disabled={loading} /></div>)}<FiChevronRight className="text-slate-soft" size={13} /></div>)}</div></div>
 
-      <aside className="grid content-start gap-4"><div className="rounded-lg border border-line bg-white p-4 shadow-sm"><h2 className="text-xs font-extrabold">Notification Summary</h2><div className="mt-4 flex items-center gap-3"><span className="flex size-14 items-center justify-center rounded-full bg-green-soft text-green-600"><FiBell size={25} /></span><div><p className="text-xl font-extrabold">{activeCount}</p><p className="text-[9px] font-bold text-green-600">Active Notifications</p><p className="mt-1 text-[8px] text-slate-soft">You&apos;re all set! We&apos;ll keep you updated.</p></div></div><div className="mt-4 grid gap-3 border-t border-line pt-4 text-[8px]"><p className="flex justify-between"><span>Email Notifications</span><b>{Object.values(preferences).filter((item) => item.email).length} Active</b></p><p className="flex justify-between"><span>SMS Notifications</span><b>{Object.values(preferences).filter((item) => item.sms).length} Active</b></p><p className="flex justify-between"><span>Push Notifications</span><b>{Object.values(preferences).filter((item) => item.push).length} Active</b></p></div><button type="button" onClick={() => setSaved(true)} className="mt-4 w-full rounded bg-green-600 py-2 text-[9px] font-bold text-white hover:bg-green-700">{saved ? "Preferences Saved" : "Save Preferences"}</button></div>
-        <div className="rounded-lg border border-line bg-white p-4 shadow-sm"><div className="flex items-center gap-2"><FiMoon className="text-green-600" /><h2 className="text-xs font-extrabold">Quiet Hours</h2></div><p className="mt-2 text-[8px] leading-3 text-slate-soft">Set quiet hours to pause non-urgent notifications</p><div className="mt-3 grid grid-cols-2 gap-2"><label className="grid gap-1 text-[8px] text-slate-soft">From<span className="flex items-center justify-between rounded border border-[#dce3eb] px-2 py-2 text-[8px] text-navy">10:00 PM <FiChevronDown /></span></label><label className="grid gap-1 text-[8px] text-slate-soft">To<span className="flex items-center justify-between rounded border border-[#dce3eb] px-2 py-2 text-[8px] text-navy">07:00 AM <FiChevronDown /></span></label></div><div className="mt-3 flex items-center justify-between text-[8px]"><span>Enable Quiet Hours</span><Toggle enabled={quietHours} onChange={() => setQuietHours((value) => !value)} label="Enable Quiet Hours" /></div><p className="mt-3 text-[7px] text-slate-soft">Time Zone: Asia/Kolkata (IST)</p></div>
+      <aside className="grid content-start gap-4"><div className="rounded-lg border border-line bg-white p-4 shadow-sm"><h2 className="text-xs font-extrabold">Notification Summary</h2><div className="mt-4 flex items-center gap-3"><span className="flex size-14 items-center justify-center rounded-full bg-green-soft text-green-600"><FiBell size={25} /></span><div><p className="text-xl font-extrabold">{activeCount}</p><p className="text-[9px] font-bold text-green-600">Selected Preferences</p><p className="mt-1 text-[8px] text-slate-soft">Delivery depends on available channel integrations.</p></div></div><div className="mt-4 grid gap-3 border-t border-line pt-4 text-[8px]"><p className="flex justify-between"><span>Email Notifications</span><b>{Object.values(preferences).filter((item) => item.email).length} Active</b></p><p className="flex justify-between"><span>SMS Notifications</span><b>{Object.values(preferences).filter((item) => item.sms).length} Active</b></p><p className="flex justify-between"><span>Push Notifications</span><b>{Object.values(preferences).filter((item) => item.push).length} Active</b></p></div><p role="status" className="mt-4 text-center text-[9px] font-bold text-green-600">{saving ? "Saving preferences..." : saved ? "Preferences saved" : ""}</p></div>
+        <div className="rounded-lg border border-line bg-white p-4 shadow-sm"><div className="flex items-center gap-2"><FiMoon className="text-green-600" /><h2 className="text-xs font-extrabold">Quiet Hours</h2></div><p className="mt-2 text-[8px] leading-3 text-slate-soft">Set quiet hours to pause non-urgent notifications</p><div className="mt-3 grid grid-cols-2 gap-2"><label className="grid gap-1 text-[8px] text-slate-soft">From<span className="flex items-center justify-between rounded border border-[#dce3eb] px-2 py-2 text-[8px] text-navy">10:00 PM <FiChevronDown /></span></label><label className="grid gap-1 text-[8px] text-slate-soft">To<span className="flex items-center justify-between rounded border border-[#dce3eb] px-2 py-2 text-[8px] text-navy">07:00 AM <FiChevronDown /></span></label></div><div className="mt-3 flex items-center justify-between text-[8px]"><span>Enable Quiet Hours</span><Toggle enabled={quietHours} onChange={toggleQuietHours} label="Enable Quiet Hours" disabled={loading} /></div><p className="mt-3 text-[7px] text-slate-soft">Time Zone: Asia/Kolkata (IST)</p></div>
         <div className="rounded-lg border border-line bg-white p-4 shadow-sm"><h2 className="text-xs font-extrabold">Stay Connected</h2><p className="mt-2 text-[8px] leading-3 text-slate-soft">Don&apos;t miss important updates about your health journey.</p>{["Track your orders", "Get exclusive offers", "Expert nutrition tips", "New product alerts"].map((item) => <p key={item} className="mt-2 flex items-center gap-2 text-[8px]"><span className="flex size-3 items-center justify-center rounded-full bg-green-600 text-white"><FiCheck size={8} /></span>{item}</p>)}</div><div className="rounded-lg border border-line bg-white p-4 shadow-sm"><div className="flex items-center gap-2"><FiMessageSquare className="text-green-600" /><h2 className="text-xs font-extrabold">Need Help?</h2></div><p className="mt-2 text-[8px] text-slate-soft">Having trouble with notifications?</p><button type="button" className="mt-3 rounded border border-green-500 px-3 py-1.5 text-[9px] font-bold text-green-600">Contact Support</button></div></aside>
     </div>
 
-    <div className="mt-5"><div className="mb-3 flex items-center justify-between"><div><h2 className="text-xs font-extrabold">Recommended for You</h2><p className="mt-1 text-[9px] text-slate-soft">Handpicked products you might be interested in</p></div><Link href="/shop" className="text-[9px] font-bold text-green-600">View All Products <FiArrowRight className="inline" /></Link></div><div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">{recommendations.map((product) => <div key={product.id} className="relative rounded-md border border-line bg-white p-2 shadow-sm"><button type="button" onClick={() => void toggleWishlist(product.id)} aria-label={`Wishlist ${product.name}`} className="absolute right-2 top-2 text-slate-soft"><FiHeart size={13} fill={isWishlisted(product.id) ? "currentColor" : "none"} /></button><img src={product.image} alt={product.name} className="mx-auto h-20 object-contain" /><p className="truncate text-[9px] font-bold">{product.name}</p><p className="mt-1 truncate text-[8px] text-slate-soft">{product.description}</p><p className="mt-1 text-[10px] font-extrabold">{money(product.price)}</p><p className="text-[8px] text-slate-soft line-through">{money(product.mrp ?? 0)}</p><button type="button" onClick={() => addItem(product.id)} className="mt-2 w-full rounded border border-[#bdc8d6] py-1.5 text-[8px] font-bold hover:border-green-500 hover:text-green-600">Add to Cart</button></div>)}</div></div>
+    <div className="mt-5"><div className="mb-3 flex items-center justify-between"><div><h2 className="text-xs font-extrabold">Recommended for You</h2><p className="mt-1 text-[9px] text-slate-soft">Handpicked products you might be interested in</p></div><Link href="/shop" className="text-[9px] font-bold text-green-600">View All Products <FiArrowRight className="inline" /></Link></div><div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">{recommendations.map((product) => <div key={product.id} className="relative rounded-md border border-line bg-white p-2 shadow-sm"><button type="button" onClick={() => void toggleWishlist(product.id)} aria-label={`Wishlist ${product.name}`} className="absolute right-2 top-2 text-slate-soft"><FiHeart size={13} fill={isWishlisted(product.id) ? "currentColor" : "none"} /></button><img src={product.image} alt={product.name} className="mx-auto h-20 object-contain" /><p className="truncate text-[9px] font-bold">{product.name}</p><p className="mt-1 truncate text-[8px] text-slate-soft">{product.description}</p><p className="mt-1 text-[10px] font-extrabold">{money(product.price)}</p><p className="text-[8px] text-slate-soft line-through">{money(product.mrp ?? 0)}</p><AddToCartButton productId={product.id} className="mt-2 w-full rounded border border-[#bdc8d6] py-1.5 text-[8px] font-bold hover:border-green-500 hover:text-green-600" /></div>)}</div></div>
     <div className="mt-5 grid grid-cols-2 gap-2 rounded-lg border border-line bg-white p-3 sm:grid-cols-3 lg:grid-cols-6">{([ [FiLock, "100% Authentic", "Genuine products only"], [FiShield, "Lab Tested", "Purity & safety"], [FiCheck, "Clean Ingredients", "No banned substances"], [FiLock, "Secure Payments", "100% safe & secure"], [FiArrowRight, "Easy Returns", "Hassle-free returns"], [FiGift, "Fast Delivery", "Quick delivery" ] ] as [IconType, string, string][]).map(([Icon, title, detail]) => <div key={title} className="flex items-center gap-2"><span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-green-soft text-green-600"><Icon size={14} /></span><div><p className="text-[8px] font-bold">{title}</p><p className="text-[7px] text-slate-soft">{detail}</p></div></div>)}</div>
   </section>;
 }

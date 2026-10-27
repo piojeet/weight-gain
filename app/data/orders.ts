@@ -8,7 +8,7 @@ export type Order = {
   statusDate: string;
   paymentMethod: string;
   total: number;
-  productIds: number[];
+  productIds: Array<string | number>;
 };
 
 export const ORDERS: Order[] = [
